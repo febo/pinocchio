@@ -87,7 +87,7 @@ pub fn sol_log_slice(slice: &[u8]) {
 ///
 /// - `accounts` - A slice of [`AccountInfo`].
 /// - `data` - The instruction data.
-/// TODO: This function is not yet implemented.
+// TODO: This function is not yet implemented.
 /*
 pub fn sol_log_params(accounts: &[AccountInfo], data: &[u8]) {
     for (i, account) in accounts.iter().enumerate() {
