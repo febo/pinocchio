@@ -1,0 +1,75 @@
+name: Main
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  RUST_VERSION: 1.78.0
+  SOLANA_VERSION: 1.18.20
+  CARGO_CACHE: |
+    ~/.cargo/bin/
+    ~/.cargo/registry/index/
+    ~/.cargo/registry/cache/
+    ~/.cargo/git/db/
+    target/
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+      - name: Setup environment
+        uses: ./.github/actions/setup
+      - name: Install components
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Formatting
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy
+
+  build:
+    name: Build
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+      - name: Install Solana
+        uses: nifty-oss/actions/install-solana@v1
+        with:
+          version: ${{ env.SOLANA_VERSION }}
+          cache: true
+      - name: Cache cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CARGO_CACHE }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo
+      - name: Build
+        run: cargo build-bpf
+
+  test:
+    name: Test
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+      - name: Setup environment
+        uses: ./.github/actions/setup
+        with:
+          solana: ${{ env.SOLANA_VERSION }}
+      - name: Cache cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CARGO_CACHE }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo
+      - name: Build
+        run: cargo test
