@@ -22,8 +22,6 @@ jobs:
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
-      - name: Setup environment
-        uses: ./.github/actions/setup
       - name: Install components
         uses: dtolnay/rust-toolchain@stable
         with:
