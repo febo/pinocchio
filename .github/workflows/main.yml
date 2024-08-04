@@ -23,9 +23,10 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v4
       - name: Install components
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
           components: clippy, rustfmt
+          toolchain: ${{ env.RUST_VERSION }}
       - name: Formatting
         run: cargo fmt --check
       - name: Clippy
@@ -59,10 +60,6 @@ jobs:
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
-      - name: Setup environment
-        uses: ./.github/actions/setup
-        with:
-          solana: ${{ env.SOLANA_VERSION }}
       - name: Cache cargo dependencies
         uses: actions/cache@v4
         with:
