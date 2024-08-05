@@ -5,7 +5,7 @@
   <img width="400" alt="Limestone" src="https://github.com/user-attachments/assets/3a1894b4-403f-4c35-90aa-548e7672fe90" />
 </p>
 <p align="center">
-  Create Solana programs with no strings attached.
+  Create Solana programs with no dependencies attached.
 </p>
 
 <p align="center">
@@ -14,13 +14,13 @@
 </p>
 
 <p align="right">
-<i>I've got no strings</i><br />
+<i>I've got no dependencies</i><br />
 <i>To hold me down</i><br />
 <i>To make me fret</i><br />
 <i>Or make me frown</i><br />
-<i>I had strings</i><br />
+<i>I had dependencies</i><br />
 <i>But now I'm free</i><br />
-<i>There are no strings on me</i>
+<i>There are no dependencies on me</i>
 </p>
 
 ## Overview
