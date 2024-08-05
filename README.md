@@ -13,6 +13,16 @@
   <a href="https://crates.io/crates/pinocchio"><img src="https://img.shields.io/crates/v/pinocchio?logo=rust" /></a>
 </p>
 
+<p align="right">
+<i>I've got no strings</i><br />
+<i>To hold me down</i><br />
+<i>To make me fret</i><br />
+<i>Or make me frown</i><br />
+<i>I had strings</i><br />
+<i>But now I'm free</i><br />
+<i>There are no strings on me</i>
+</p>
+
 ## Overview
 
 Pinocchio is a zero-dependency library to create Solana programs in Rust. It takes advantage of the way SBF loaders serialize the program input parameters into a byte array that is then passed to the program's entrypoint to define zero-copy types to read the input. Since the communication between a program and SBF loader &mdash; either at the first time the program is called or when one program invokes the instructions of another program &mdash; is done via a byte array, a program can define its own types. This completely eliminates the dependency on the `solana-program` crate, which in turn mitigates dependency issues by having a crate specifically to create on-chain programs.
