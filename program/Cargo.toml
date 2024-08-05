@@ -1,0 +1,11 @@
+[package]
+name = "pinocchio"
+description = "Create Solana programs with no strings attached"
+version = "0.0.1"
+edition = "2021"
+
+[features]
+macro = ["dep:pinocchio-macro"]
+
+[dependencies]
+pinocchio-macro = { version="^0", path="../macro", optional=true }

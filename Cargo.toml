@@ -1,5 +1,3 @@
-[package]
-name = "pinocchio"
-description = "Create Solana programs with no strings attached"
-version = "0.0.1"
-edition = "2021"
+[workspace]
+resolver = "2"
+members = ["macro", "program"]

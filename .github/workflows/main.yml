@@ -28,9 +28,9 @@ jobs:
           components: clippy, rustfmt
           toolchain: ${{ env.RUST_VERSION }}
       - name: Formatting
-        run: cargo fmt --check
+        run: cargo fmt --all --check
       - name: Clippy
-        run: cargo clippy
+        run: cargo clippy --all-targets --all-features --no-deps
 
   build:
     name: Build
