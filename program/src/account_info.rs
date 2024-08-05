@@ -4,9 +4,11 @@
 
 use std::{ptr::NonNull, slice::from_raw_parts_mut};
 
-use crate::{
-    program_error::ProgramError, pubkey::Pubkey, syscalls::sol_memset_, MAX_PERMITTED_DATA_INCREASE,
-};
+use crate::{program_error::ProgramError, pubkey::Pubkey, syscalls::sol_memset_};
+
+/// Maximum number of bytes a program may add to an account during a
+/// single realloc.
+pub const MAX_PERMITTED_DATA_INCREASE: usize = 1_024 * 10;
 
 /// Raw account data.
 ///

@@ -1,9 +1,9 @@
 use std::{alloc::Layout, mem::size_of, ptr::null_mut, slice::from_raw_parts};
 
 use crate::{
-    account_info::{Account, AccountInfo},
+    account_info::{Account, AccountInfo, MAX_PERMITTED_DATA_INCREASE},
+    program_error::ProgramError,
     pubkey::Pubkey,
-    BPF_ALIGN_OF_U128, MAX_PERMITTED_DATA_INCREASE, NON_DUP_MARKER,
 };
 
 /// Start address of the memory region used for program heap.
@@ -17,6 +17,19 @@ pub const HEAP_LENGTH: usize = 32 * 1024;
 /// This value is used to set the maximum number of accounts that a program
 /// is expecting and statically initialize the array of `AccountInfo`.
 pub const MAX_TX_ACCOUNT_LOCKS: usize = 64;
+
+/// `assert_eq(std::mem::align_of::<u128>(), 8)` is true for BPF but not
+/// for some host machines./
+pub const BPF_ALIGN_OF_U128: usize = 8;
+
+/// Value used to indicate that a serialized account is not a duplicate.
+pub const NON_DUP_MARKER: u8 = u8::MAX;
+
+/// Return value for a successful program execution.
+pub const SUCCESS: u64 = 0;
+
+/// The result of a program execution.
+pub type ProgramResult = Result<(), ProgramError>;
 
 /// Declare the program entrypoint and set up global handlers.
 ///
@@ -57,14 +70,15 @@ pub const MAX_TX_ACCOUNT_LOCKS: usize = 64;
 /// #[cfg(feature = "bpf-entrypoint")]
 /// pub mod entrypoint {
 ///
-///     use pinocchio::{entrypoint, account_info::AccountInfo};
-///     use solana_program::{
+///     use pinocchio::{
+///         account_info::AccountInfo,
+///         entrypoint,
 ///         entrypoint::ProgramResult,
 ///         msg,
-///         pubkey::Pubkey,
+///         pubkey::Pubkey
 ///     };
 ///
-///     entrypoint!(process_instruction, 10);
+///     entrypoint!(process_instruction);
 ///
 ///     pub fn process_instruction(
 ///         program_id: &Pubkey,
@@ -81,12 +95,11 @@ pub const MAX_TX_ACCOUNT_LOCKS: usize = 64;
 #[macro_export]
 macro_rules! entrypoint {
     ( $process_instruction:ident ) => {
-        $crate::entrypoint::entrypoint!(
-            $process_instruction,
+        entrypoint!($process_instruction, {
             $crate::entrypoint::MAX_TX_ACCOUNT_LOCKS
-        );
+        });
     };
-    ( $process_instruction:ident, $maximum:literal ) => {
+    ( $process_instruction:ident, $maximum:expr ) => {
         #[no_mangle]
         pub unsafe extern "C" fn entrypoint(input: *mut u8) -> u64 {
             // create an array of uninitialized account infos; it is safe to `assume_init` since
@@ -110,8 +123,8 @@ macro_rules! entrypoint {
             }
         }
 
-        $crate::entrypoint::custom_heap_default!();
-        $crate::entrypoint::custom_panic_default!();
+        $crate::custom_heap_default!();
+        $crate::custom_panic_default!();
     };
 }
 
@@ -219,9 +232,9 @@ macro_rules! custom_heap_default {
     () => {
         #[cfg(all(not(feature = "custom-heap"), target_os = "solana"))]
         #[global_allocator]
-        static A: $crate::BumpAllocator = $crate::BumpAllocator {
-            start: $crate::HEAP_START_ADDRESS as usize,
-            len: $crate::HEAP_LENGTH,
+        static A: $crate::entrypoint::BumpAllocator = $crate::entrypoint::BumpAllocator {
+            start: $crate::entrypoint::HEAP_START_ADDRESS as usize,
+            len: $crate::entrypoint::HEAP_LENGTH,
         };
     };
 }

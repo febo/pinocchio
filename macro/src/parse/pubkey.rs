@@ -10,7 +10,7 @@ pub(crate) struct Pubkey(proc_macro2::TokenStream);
 
 impl Parse for Pubkey {
     fn parse(input: ParseStream) -> Result<Self> {
-        parse_id(input, quote! { ::pubkey::Pubkey }).map(Self)
+        parse_id(input).map(Self)
     }
 }
 

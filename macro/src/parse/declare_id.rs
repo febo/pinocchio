@@ -10,13 +10,13 @@ pub(crate) struct DeclareId(proc_macro2::TokenStream);
 
 impl Parse for DeclareId {
     fn parse(input: ParseStream) -> Result<Self> {
-        parse_id(input, quote! { ::solana_sdk::pubkey::Pubkey }).map(Self)
+        parse_id(input).map(Self)
     }
 }
 
 impl ToTokens for DeclareId {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-        id_to_tokens(&self.0, quote! { ::pubkey::Pubkey }, tokens)
+        id_to_tokens(&self.0, quote! { ::pinocchio::pubkey::Pubkey }, tokens)
     }
 }
 

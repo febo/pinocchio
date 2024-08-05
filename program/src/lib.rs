@@ -16,13 +16,5 @@ pub mod program_error;
 pub mod pubkey;
 pub mod syscalls;
 
-/// Maximum number of bytes a program may add to an account during a
-/// single realloc.
-pub const MAX_PERMITTED_DATA_INCREASE: usize = 1_024 * 10;
-
-/// `assert_eq(std::mem::align_of::<u128>(), 8)` is true for BPF but not
-/// for some host machines./
-pub const BPF_ALIGN_OF_U128: usize = 8;
-
-/// Value used to indicate that a serialized account is not a duplicate.
-pub const NON_DUP_MARKER: u8 = u8::MAX;
+#[cfg(feature = "macro")]
+pub use pinocchio_macro::{declare_id, pubkey};
