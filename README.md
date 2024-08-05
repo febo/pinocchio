@@ -25,7 +25,7 @@
 
 ## Overview
 
-Pinocchio is a zero-dependency library to create Solana programs in Rust. It takes advantage of the way SBF loaders serialize the program input parameters into a byte array that is then passed to the program's entrypoint to define zero-copy types to read the input. Since the communication between a program and SBF loader &mdash; either at the first time the program is called or when one program invokes the instructions of another program &mdash; is done via a byte array, a program can define its own types. This completely eliminates the dependency on the `solana-program` crate, which in turn mitigates dependency issues by having a crate specifically to create on-chain programs.
+Pinocchio is a zero-dependency library to create Solana programs in Rust. It takes advantage of the way SBF loaders serialize the program input parameters into a byte array that is then passed to the program's entrypoint to define zero-copy types to read the input. Since the communication between a program and SBF loader &mdash; either at the first time the program is called or when one program invokes the instructions of another program &mdash; is done via a byte array, a program can define its own types. This completely eliminates the dependency on the `solana-program` crate, which in turn mitigates dependency issues by having a crate specifically designed to create on-chain programs.
 
 > [!WARNING]
 > The current version is at work-in-progress stage. While it is already possible to write programs, there are still a few improvements needed &mdash; e.g., easy access to cluster sysvars and cross program invocation helpers.
