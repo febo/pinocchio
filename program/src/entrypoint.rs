@@ -12,14 +12,19 @@ pub const HEAP_START_ADDRESS: u64 = 0x300000000;
 /// Length of the heap memory region used for program heap.
 pub const HEAP_LENGTH: usize = 32 * 1024;
 
-/// Maximum number of accounts that a transaction may lock.
+/// Maximum number of accounts that a transaction may process.
 ///
 /// This value is used to set the maximum number of accounts that a program
 /// is expecting and statically initialize the array of `AccountInfo`.
-pub const MAX_TX_ACCOUNT_LOCKS: usize = 64;
+///
+/// This is based on the current [maximum number of accounts] that a transaction
+/// may lock in a block.
+///
+/// [maximum number of accounts]: https://github.com/anza-xyz/agave/blob/2e6ca8c1f62db62c1db7f19c9962d4db43d0d550/runtime/src/bank.rs#L3209-L3221
+pub const MAX_TX_ACCOUNTS: usize = 128;
 
 /// `assert_eq(std::mem::align_of::<u128>(), 8)` is true for BPF but not
-/// for some host machines./
+/// for some host machines.
 pub const BPF_ALIGN_OF_U128: usize = 8;
 
 /// Value used to indicate that a serialized account is not a duplicate.
@@ -96,7 +101,7 @@ pub type ProgramResult = Result<(), ProgramError>;
 macro_rules! entrypoint {
     ( $process_instruction:ident ) => {
         entrypoint!($process_instruction, {
-            $crate::entrypoint::MAX_TX_ACCOUNT_LOCKS
+            $crate::entrypoint::MAX_TX_ACCOUNTS
         });
     };
     ( $process_instruction:ident, $maximum:expr ) => {
@@ -105,11 +110,11 @@ macro_rules! entrypoint {
             // create an array of uninitialized account infos; it is safe to `assume_init` since
             // we are claiming that the array of `MaybeUninit` is initialized and `MaybeUninit` do
             // not require initialization
-            let mut accounts: [std::mem::MaybeUninit<$crate::account_info::AccountInfo>; $maximum] =
-                std::mem::MaybeUninit::uninit().assume_init();
+            let mut accounts =
+                [std::mem::MaybeUninit::<$crate::account_info::AccountInfo>::uninit(); $maximum];
 
             let (program_id, count, instruction_data) =
-                $crate::entrypoint::deserialize::<$maximum>(input, accounts.as_mut_ptr());
+                $crate::entrypoint::deserialize::<$maximum>(input, &mut accounts);
 
             // call the program's entrypoint passing `count` account infos; we know that
             // they are initialized so we cast the pointer to a slice of `[AccountInfo]`
@@ -136,7 +141,7 @@ macro_rules! entrypoint {
 #[inline(always)]
 pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
     input: *mut u8,
-    accounts: *mut std::mem::MaybeUninit<AccountInfo>,
+    accounts: &mut [std::mem::MaybeUninit<AccountInfo>],
 ) -> (&'a Pubkey, usize, &'a [u8]) {
     let mut offset: usize = 0;
 
@@ -166,20 +171,13 @@ pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
             // MAGNETAR FIELDS: reset borrow state right before pushing
             (*account_info).borrow_state = 0b_0000_0000;
 
-            std::ptr::write(
-                accounts.add(i),
-                std::mem::MaybeUninit::new(AccountInfo {
-                    raw: account_info as *const _ as *mut _,
-                }),
-            );
+            accounts[i].write(AccountInfo {
+                raw: account_info as *const _ as *mut _,
+            });
         } else {
             offset += 8;
-            // duplicate account, clone the original
-            std::ptr::copy_nonoverlapping(
-                accounts.add(duplicate_info as usize),
-                accounts.add(i),
-                1,
-            );
+            // duplicate account, clone the original pointer
+            accounts[i].write(accounts[duplicate_info as usize].assume_init_ref().clone());
         }
     }
 
