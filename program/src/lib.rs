@@ -15,6 +15,7 @@ pub mod log;
 pub mod program_error;
 pub mod pubkey;
 pub mod syscalls;
+pub mod sysvars;
 
 #[cfg(feature = "macro")]
 pub use pinocchio_macro::{declare_id, pubkey};
