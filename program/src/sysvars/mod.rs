@@ -2,6 +2,8 @@
 
 use crate::program_error::ProgramError;
 
+pub mod clock;
+
 /// A type that holds sysvar data.
 pub trait Sysvar: Default + Sized {
     /// Load the sysvar directly from the runtime.
