@@ -33,7 +33,7 @@ impl Sysvar for Rent {
 /// The total rent in lamports
 impl Rent {
     pub fn due(&self, bytes: u64, years: f64) -> u64 {
-        (self.lamports_per_byte_year * bytes as u64)
+        (self.lamports_per_byte_year * bytes)
             .saturating_mul((years * 100.0) as u64)
             .saturating_div(100)
     }
