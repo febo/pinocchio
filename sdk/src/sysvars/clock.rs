@@ -1,6 +1,7 @@
-use crate::impl_sysvar_get;
+//! Information about the network's clock, ticks, slots, etc.
 
 use super::Sysvar;
+use crate::impl_sysvar_get;
 
 /// The unit of time given to a leader for encoding a block.
 ///
