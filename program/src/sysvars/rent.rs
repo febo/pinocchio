@@ -2,8 +2,8 @@
 //!
 //! This is required for the rent sysvar implementation.
 
-use crate::impl_sysvar_get;
 use super::Sysvar;
+use crate::impl_sysvar_get;
 
 /// Rent sysvar data
 #[repr(C)]

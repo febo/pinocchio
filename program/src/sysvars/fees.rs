@@ -1,7 +1,7 @@
 //! Calculation of transaction fees.
 
+use super::{clock::DEFAULT_MS_PER_SLOT, Sysvar};
 use crate::impl_sysvar_get;
-use super::{Sysvar, clock::DEFAULT_MS_PER_SLOT};
 
 /// Fee calculator for processing transactions
 #[derive(Debug, Default, Clone, Copy)]
@@ -41,7 +41,6 @@ pub struct FeeRateGovernor {
 
 pub const DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE: u64 = 10_000;
 pub const DEFAULT_TARGET_SIGNATURES_PER_SLOT: u64 = 50 * DEFAULT_MS_PER_SLOT;
-
 
 // Percentage of tx fees to burn...I think this was changed in the anza update...
 /// 100% of fees now goes to validators...I'll confirm...
