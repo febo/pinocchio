@@ -107,11 +107,12 @@ macro_rules! entrypoint {
     ( $process_instruction:ident, $maximum:expr ) => {
         #[no_mangle]
         pub unsafe extern "C" fn entrypoint(input: *mut u8) -> u64 {
+            const UNINIT: std::mem::MaybeUninit<$crate::account_info::AccountInfo> =
+                std::mem::MaybeUninit::<$crate::account_info::AccountInfo>::uninit();
             // create an array of uninitialized account infos; it is safe to `assume_init` since
             // we are claiming that the array of `MaybeUninit` is initialized and `MaybeUninit` do
             // not require initialization
-            let mut accounts =
-                [std::mem::MaybeUninit::<$crate::account_info::AccountInfo>::uninit(); $maximum];
+            let mut accounts = [UNINIT; $maximum];
 
             let (program_id, count, instruction_data) =
                 $crate::entrypoint::deserialize::<$maximum>(input, &mut accounts);
