@@ -5,7 +5,7 @@ use crate::pubkey::Pubkey;
 #[derive(Debug, Clone)]
 pub struct AccountMeta {
     // Public key of the account.
-    pubkey: *const Pubkey,
+    pub pubkey: *const Pubkey,
 
     // Is the account writable?
     pub is_writable: bool,
