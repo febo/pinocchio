@@ -12,6 +12,7 @@ pub mod account_info;
 pub mod entrypoint;
 pub mod instruction;
 pub mod log;
+pub mod program;
 pub mod program_error;
 pub mod pubkey;
 pub mod syscalls;
