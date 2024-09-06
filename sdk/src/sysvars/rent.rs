@@ -5,6 +5,8 @@
 use super::Sysvar;
 use crate::impl_sysvar_get;
 
+pub const ACCOUNT_STORAGE_OVERHEAD: u64 = 128;
+
 /// Rent sysvar data
 #[repr(C)]
 #[derive(Clone, Debug, Default)]
@@ -48,7 +50,10 @@ impl Rent {
     ///
     /// The minimum balance in lamports for rent exemption
     pub fn minimum_balance(&self, bytes: u64) -> u64 {
-        self.due(bytes, self.exemption_threshold)
+        self.due(
+            ACCOUNT_STORAGE_OVERHEAD.saturating_add(bytes),
+            self.exemption_threshold,
+        )
     }
 
     /// Determines if an account can be considered rent exempt
