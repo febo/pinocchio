@@ -1,63 +1,7 @@
-use crate::{account_info::AccountInfo, instruction::AccountMeta, pubkey::Pubkey};
-
-/// An `AccountInfo` as expected by `sol_invoke_signed_c`.
-///
-/// DO NOT EXPOSE THIS STRUCT:
-///
-/// To ensure pointers are valid upon use, the scope of this struct should
-/// only be limited to the stack where sol_invoke_signed_c happens and then
-/// discarded immediately after.
-#[repr(C)]
-#[derive(Clone)]
-struct CAccountInfo {
-    // Public key of the account.
-    pub key: *const Pubkey,
-
-    // Number of lamports owned by this account.
-    pub lamports: *const u64,
-
-    // Length of data in bytes.
-    pub data_len: u64,
-
-    // On-chain data within this account.
-    pub data: *const u8,
-
-    // Program that owns this account.
-    pub owner: *const Pubkey,
-
-    // The epoch at which this account will next owe rent.
-    pub rent_epoch: u64,
-
-    // Transaction was signed by this account's key?
-    pub is_signer: bool,
-
-    // Is the account writable?
-    pub is_writable: bool,
-
-    // This account's data contains a loaded program (and is now read-only).
-    pub executable: bool,
-}
-
-#[inline(always)]
-const fn offset<T, U>(ptr: *const T, offset: usize) -> *const U {
-    unsafe { (ptr as *const u8).add(offset) as *const U }
-}
-
-impl From<&AccountInfo> for CAccountInfo {
-    fn from(account: &AccountInfo) -> Self {
-        CAccountInfo {
-            key: offset(account.raw, 8),
-            lamports: offset(account.raw, 72),
-            data_len: account.data_len() as u64,
-            data: offset(account.raw, 88),
-            owner: offset(account.raw, 40),
-            rent_epoch: 0,
-            is_signer: account.is_signer(),
-            is_writable: account.is_writable(),
-            executable: account.executable(),
-        }
-    }
-}
+use crate::{
+    instruction::{Account, AccountMeta, Instruction, Signer},
+    pubkey::Pubkey,
+};
 
 /// An `Instruction` as expected by `sol_invoke_signed_c`.
 ///
@@ -70,51 +14,68 @@ impl From<&AccountInfo> for CAccountInfo {
 #[derive(Debug, PartialEq, Clone)]
 struct CInstruction<'a> {
     /// Public key of the program.
-    pub program_id: *const Pubkey,
+    program_id: *const Pubkey,
 
     /// Accounts expected by the program instruction.
-    pub accounts: *const AccountMeta<'a>,
+    accounts: *const AccountMeta<'a>,
 
     /// Number of accounts expected by the program instruction.
-    pub accounts_len: u64,
+    accounts_len: u64,
 
     /// Data expected by the program instruction.
-    pub data: *const u8,
+    data: *const u8,
 
     /// Length of the data expected by the program instruction.
-    pub data_len: u64,
+    data_len: u64,
 }
 
-/// A signer seed as expected by `sol_invoke_signed_c`.
-///
-/// DO NOT EXPOSE THIS STRUCT:
-///
-/// To ensure pointers are valid upon use, the scope of this struct should
-/// only be limited to the stack where sol_invoke_signed_c happens and then
-/// discarded immediately after.
-#[repr(C)]
-#[derive(Debug, PartialEq, Clone)]
-struct CSignerSeed {
-    /// Seed bytes.
-    pub seed: *const u8,
-
-    /// Length of the seed bytes.
-    pub len: u64,
+impl<'a> From<&Instruction<'a, '_, '_, '_>> for CInstruction<'a> {
+    fn from(instruction: &Instruction<'a, '_, '_, '_>) -> Self {
+        CInstruction {
+            program_id: instruction.program_id,
+            accounts: instruction.accounts.as_ptr(),
+            accounts_len: instruction.accounts.len() as u64,
+            data: instruction.data.as_ptr(),
+            data_len: instruction.data.len() as u64,
+        }
+    }
 }
 
-/// Signer as expected by `sol_invoke_signed_c`.
+/// Invoke a cross-program instruction with signatures but don't enforce Rust's
+/// aliasing rules.
 ///
-/// DO NOT EXPOSE THIS STRUCT:
+/// This function is like [`invoke_signed`] except that it does not check that
+/// [`RefCell`]s within [`Account`]s are properly borrowable as described in
+/// the documentation for that function. Those checks consume CPU cycles that
+/// this function avoids.
 ///
-/// To ensure pointers are valid upon use, the scope of this struct should
-/// only be limited to the stack where sol_invoke_signed_c happens and then
-/// discarded immediately after.
-#[repr(C)]
-#[derive(Debug, PartialEq, Clone)]
-struct CSigner {
-    /// Seed bytes.
-    pub seeds: *const CSignerSeed,
+/// [`RefCell`]: std::cell::RefCell
+///
+/// # Safety
+///
+/// If any of the writable accounts passed to the callee contain data that is
+/// borrowed within the calling program, and that data is written to by the
+/// callee, then Rust's aliasing rules will be violated and cause undefined
+/// behavior.
+pub unsafe fn invoke_signed_unchecked(
+    instruction: &Instruction,
+    accounts: &[Account],
+    signers_seeds: &[Signer],
+) {
+    #[cfg(target_os = "solana")]
+    {
+        let instruction = CInstruction::from(instruction);
+        unsafe {
+            crate::syscalls::sol_invoke_signed_c(
+                &instruction as *const _ as *const u8,
+                accounts as *const _ as *const u8,
+                accounts.len() as u64,
+                signers_seeds as *const _ as *const u8,
+                signers_seeds.len() as u64,
+            )
+        };
+    }
 
-    /// Number of signers.
-    pub len: u64,
+    #[cfg(not(target_os = "solana"))]
+    core::hint::black_box((instruction, accounts, signers_seeds));
 }
