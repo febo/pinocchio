@@ -1,5 +1,10 @@
+use core::mem::MaybeUninit;
+
 use crate::{
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
     instruction::{Account, AccountMeta, Instruction, Signer},
+    program_error::ProgramError,
     pubkey::Pubkey,
 };
 
@@ -41,15 +46,64 @@ impl<'a> From<&Instruction<'a, '_, '_, '_>> for CInstruction<'a> {
     }
 }
 
+pub fn invoke<const ACCOUNTS: usize>(
+    instruction: &Instruction,
+    account_infos: &[&AccountInfo; ACCOUNTS],
+) -> ProgramResult {
+    invoke_signed(instruction, account_infos, &[])
+}
+
+pub fn invoke_signed<const ACCOUNTS: usize>(
+    instruction: &Instruction,
+    account_infos: &[&AccountInfo; ACCOUNTS],
+    signers_seeds: &[Signer],
+) -> ProgramResult {
+    if instruction.accounts.len() < ACCOUNTS {
+        return Err(ProgramError::NotEnoughAccountKeys);
+    }
+
+    const UNINIT: MaybeUninit<Account> = MaybeUninit::<Account>::uninit();
+    let mut accounts = [UNINIT; ACCOUNTS];
+
+    for index in 0..ACCOUNTS {
+        let account_info = account_infos[index];
+        let account_meta = &instruction.accounts[index];
+
+        if account_info.key() != account_meta.pubkey {
+            return Err(ProgramError::InvalidArgument);
+        }
+
+        if account_meta.is_writable {
+            let _ = account_info.try_borrow_mut_data()?;
+            let _ = account_info.try_borrow_mut_lamports()?;
+        } else {
+            let _ = account_info.try_borrow_data()?;
+            let _ = account_info.try_borrow_lamports()?;
+        }
+
+        accounts[index].write(Account::from(account_infos[index]));
+    }
+
+    unsafe {
+        invoke_signed_unchecked(
+            instruction,
+            core::slice::from_raw_parts(accounts.as_ptr() as _, ACCOUNTS),
+            signers_seeds,
+        );
+    }
+
+    #[cfg(not(target_os = "solana"))]
+    core::hint::black_box((instruction, accounts, signers_seeds));
+
+    Ok(())
+}
+
 /// Invoke a cross-program instruction with signatures but don't enforce Rust's
 /// aliasing rules.
 ///
-/// This function is like [`invoke_signed`] except that it does not check that
-/// [`RefCell`]s within [`Account`]s are properly borrowable as described in
-/// the documentation for that function. Those checks consume CPU cycles that
-/// this function avoids.
-///
-/// [`RefCell`]: std::cell::RefCell
+/// This function does not check that [`Ref`]s within [`Account`]s are properly
+/// borrowable as described in the documentation for that function. Those checks
+/// consume CPU cycles that this function avoids.
 ///
 /// # Safety
 ///
