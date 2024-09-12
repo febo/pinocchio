@@ -98,6 +98,22 @@ pub fn invoke_signed<const ACCOUNTS: usize>(
     Ok(())
 }
 
+/// Invoke a cross-program instruction but don't enforce Rust's aliasing rules.
+///
+/// This function does not check that [`Ref`]s within [`Account`]s are properly
+/// borrowable as described in the documentation for that function. Those checks
+/// consume CPU cycles that this function avoids.
+///
+/// # Safety
+///
+/// If any of the writable accounts passed to the callee contain data that is
+/// borrowed within the calling program, and that data is written to by the
+/// callee, then Rust's aliasing rules will be violated and cause undefined
+/// behavior.
+pub unsafe fn invoke_unchecked(instruction: &Instruction, accounts: &[Account]) {
+    invoke_signed_unchecked(instruction, accounts, &[])
+}
+
 /// Invoke a cross-program instruction with signatures but don't enforce Rust's
 /// aliasing rules.
 ///
