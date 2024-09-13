@@ -92,9 +92,6 @@ pub fn invoke_signed<const ACCOUNTS: usize>(
         );
     }
 
-    #[cfg(not(target_os = "solana"))]
-    core::hint::black_box((instruction, accounts, signers_seeds));
-
     Ok(())
 }
 
