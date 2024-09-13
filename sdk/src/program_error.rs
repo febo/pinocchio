@@ -58,8 +58,8 @@ pub enum ProgramError {
     /// Provided seeds do not result in a valid address
     InvalidSeeds,
 
-    /// IO Error: `{0}`
-    BorshIoError(String),
+    /// IO Error
+    BorshIoError,
 
     /// An account does not have enough lamports to be rent-exempt
     AccountNotRentExempt,
@@ -147,7 +147,7 @@ impl From<u64> for ProgramError {
             ACCOUNT_BORROW_FAILED => Self::AccountBorrowFailed,
             MAX_SEED_LENGTH_EXCEEDED => Self::MaxSeedLengthExceeded,
             INVALID_SEEDS => Self::InvalidSeeds,
-            BORSH_IO_ERROR => Self::BorshIoError("Unknown".to_string()),
+            BORSH_IO_ERROR => Self::BorshIoError,
             ACCOUNT_NOT_RENT_EXEMPT => Self::AccountNotRentExempt,
             UNSUPPORTED_SYSVAR => Self::UnsupportedSysvar,
             ILLEGAL_OWNER => Self::IllegalOwner,
@@ -182,7 +182,7 @@ impl From<ProgramError> for u64 {
             ProgramError::AccountBorrowFailed => ACCOUNT_BORROW_FAILED,
             ProgramError::MaxSeedLengthExceeded => MAX_SEED_LENGTH_EXCEEDED,
             ProgramError::InvalidSeeds => INVALID_SEEDS,
-            ProgramError::BorshIoError(_) => BORSH_IO_ERROR,
+            ProgramError::BorshIoError => BORSH_IO_ERROR,
             ProgramError::AccountNotRentExempt => ACCOUNT_NOT_RENT_EXEMPT,
             ProgramError::UnsupportedSysvar => UNSUPPORTED_SYSVAR,
             ProgramError::IllegalOwner => ILLEGAL_OWNER,

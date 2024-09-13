@@ -1,3 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["sdk", "macro"]
+members = [
+    "sdk",
+    "macro"
+]

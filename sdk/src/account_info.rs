@@ -1,8 +1,6 @@
 //! Data structures to represent account information.
 
-#![allow(clippy::missing_safety_doc)]
-
-use std::{ptr::NonNull, slice::from_raw_parts_mut};
+use core::{ptr::NonNull, slice::from_raw_parts_mut};
 
 use crate::{program_error::ProgramError, pubkey::Pubkey, syscalls::sol_memset_};
 
@@ -144,13 +142,13 @@ impl AccountInfo {
     #[allow(invalid_reference_casting)]
     pub fn assign(&self, new_owner: &Pubkey) {
         unsafe {
-            std::ptr::write_volatile(&(*self.raw).owner as *const _ as *mut Pubkey, *new_owner);
+            core::ptr::write_volatile(&(*self.raw).owner as *const _ as *mut Pubkey, *new_owner);
         }
     }
 
     /// Returns a read-only reference to the lamports in the account.
     ///
-    /// # SAFETY
+    /// # Safety
     ///
     /// This does not check or modify the 4-bit refcell. Useful when instruction
     /// has verified non-duplicate accounts.
@@ -160,7 +158,7 @@ impl AccountInfo {
 
     /// Returns a mutable reference to the lamports in the account.
     ///
-    /// # SAFETY
+    /// # Safety
     ///
     /// This does not check or modify the 4-bit refcell. Useful when instruction
     /// has verified non-duplicate accounts.
@@ -171,7 +169,7 @@ impl AccountInfo {
 
     /// Returns a read-only reference to the data in the account.
     ///
-    /// # SAFETY
+    /// # Safety
     ///
     /// This does not check or modify the 4-bit refcell. Useful when instruction
     /// has verified non-duplicate accounts.
@@ -181,7 +179,7 @@ impl AccountInfo {
 
     /// Returns a mutable reference to the data in the account.
     ///
-    /// # SAFETY
+    /// # Safety
     ///
     /// This does not check or modify the 4-bit refcell. Useful when instruction
     /// has verified non-duplicate accounts.
@@ -353,7 +351,7 @@ impl AccountInfo {
 
     /// Returns the memory address of the account data.
     fn data_ptr(&self) -> *mut u8 {
-        unsafe { (self.raw as *const _ as *mut u8).add(std::mem::size_of::<Account>()) }
+        unsafe { (self.raw as *const _ as *mut u8).add(core::mem::size_of::<Account>()) }
     }
 }
 
