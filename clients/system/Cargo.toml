@@ -5,4 +5,4 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-pinocchio = { version="^0", path="../../sdk" }
+pinocchio = { version="^0", features=["macro"], path="../../sdk" }
