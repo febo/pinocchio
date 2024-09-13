@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 use crate::{account_info::AccountInfo, pubkey::Pubkey};
 
@@ -18,50 +18,6 @@ where
     /// Metadata describing accounts that should be passed to the program.
     pub accounts: &'b [AccountMeta<'a>],
 }
-
-/*
-/// An `Instruction` as expected by `sol_invoke_signed_c`.
-#[repr(C)]
-#[derive(Debug, PartialEq, Clone)]
-pub struct Instruction<'a, 'b, 'c, 'd> {
-    /// Public key of the program.
-    program_id: &'c Pubkey,
-
-    /// Accounts expected by the program instruction.
-    accounts: *const AccountMeta<'a>,
-
-    /// Number of accounts expected by the program instruction.
-    accounts_len: u64,
-
-    /// Data expected by the program instruction.
-    data: *const u8,
-
-    /// Length of the data expected by the program instruction.
-    data_len: u64,
-
-    _accounts: PhantomData<&'b [AccountMeta<'a>]>,
-
-    _data: PhantomData<&'d [u8]>,
-}
-
-impl<'a, 'b, 'c, 'd> Instruction<'a, 'b, 'c, 'd> {
-    pub fn new(
-        program_id: &'c Pubkey,
-        accounts: &'b [AccountMeta<'a>],
-        instruction_data: &'d [u8],
-    ) -> Self {
-        Self {
-            program_id,
-            accounts: accounts.as_ptr(),
-            accounts_len: accounts.len() as u64,
-            data: instruction_data.as_ptr(),
-            data_len: instruction_data.len() as u64,
-            _accounts: PhantomData::<&'b [AccountMeta<'a>]>,
-            _data: PhantomData::<&'d [u8]>,
-        }
-    }
-}
-*/
 
 /// Use to query and convey information about the sibling instruction components
 /// when calling the `sol_get_processed_sibling_instruction` syscall.

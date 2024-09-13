@@ -7,6 +7,11 @@
 //!
 //! [`solana-sdk`]: https://docs.rs/solana-sdk/latest/solana_sdk/
 //! [`solana-program`]: https://docs.rs/solana-program/latest/solana_program/
+//!
+
+#![no_std]
+
+extern crate alloc;
 
 pub mod account_info;
 pub mod entrypoint;
