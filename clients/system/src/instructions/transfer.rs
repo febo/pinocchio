@@ -1,0 +1,47 @@
+use pinocchio::{
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    instruction::{AccountMeta, Instruction, Signer},
+    program::invoke_signed,
+};
+
+pub struct Transfer<'a> {
+    /// Funding account.
+    pub from: &'a AccountInfo,
+
+    /// Recipient account.
+    pub to: &'a AccountInfo,
+
+    /// Amount of lamports to transfer.
+    pub lamports: u64,
+}
+
+impl<'a> Transfer<'a> {
+    pub fn invoke(&self) -> ProgramResult {
+        self.invoke_signed(&[])
+    }
+
+    pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
+        // account metadata
+        let account_metas: [AccountMeta; 2] = [
+            AccountMeta::writable_signer(self.from.key()),
+            AccountMeta::writable(self.to.key()),
+        ];
+
+        // instruction data
+        // -  [0..4 ]: instruction discriminator
+        // -  [4..12]: lamports amount
+        let mut instruction_data = [0; 12];
+        // transfer instruction has a '2' discriminator
+        instruction_data[0] = 2;
+        instruction_data[4..12].copy_from_slice(&self.lamports.to_le_bytes());
+
+        let instruction = Instruction {
+            program_id: &crate::ID,
+            accounts: &account_metas,
+            data: &instruction_data,
+        };
+
+        invoke_signed(&instruction, &[self.from, self.to], signers)
+    }
+}
