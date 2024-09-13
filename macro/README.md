@@ -7,7 +7,7 @@ This crate provides two convenience macros to resolve `Pubkey`s at compile time:
 * `pubkey!`: takes a pubkey value as a base58 `&str` and generates its correpondent `Pubkey` (byte array)
 * `declare_id!`: takes a pubkey value as a base58 `&str` (usually representing a program address) and generates an `ID` constant, `check_id` and `id()` helpers
 
-These macros are available from `pinocchio` when the create is added with the feature `macro` enabled.
+These macros are available from `pinocchio` when the crate is added with the feature `macro` enabled.
 
 ## Examples
 
