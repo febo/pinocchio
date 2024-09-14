@@ -109,9 +109,7 @@ macro_rules! entrypoint {
         pub unsafe extern "C" fn entrypoint(input: *mut u8) -> u64 {
             const UNINIT: core::mem::MaybeUninit<$crate::account_info::AccountInfo> =
                 core::mem::MaybeUninit::<$crate::account_info::AccountInfo>::uninit();
-            // create an array of uninitialized account infos; it is safe to `assume_init` since
-            // we are claiming that the array of `MaybeUninit` is initialized and `MaybeUninit` do
-            // not require initialization
+            // create an array of uninitialized account infos
             let mut accounts = [UNINIT; $maximum];
 
             let (program_id, count, instruction_data) =
@@ -159,8 +157,8 @@ pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
         };
 
         for i in 0..processed {
-            let duplicate_info = *(input.add(offset) as *const u8);
-            if duplicate_info == NON_DUP_MARKER {
+            let duplicate = *(input.add(offset) as *const u8);
+            if duplicate == NON_DUP_MARKER {
                 let account_info: *mut Account = input.add(offset) as *mut _;
 
                 offset += core::mem::size_of::<Account>();
@@ -171,13 +169,11 @@ pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
 
                 (*account_info).borrow_state = 0b_0000_0000;
 
-                accounts[i].write(AccountInfo {
-                    raw: account_info as *const _ as *mut _,
-                });
+                accounts[i].write(AccountInfo { raw: account_info });
             } else {
                 offset += 8;
                 // duplicate account, clone the original pointer
-                accounts[i].write(accounts[duplicate_info as usize].assume_init_ref().clone());
+                accounts[i].write(accounts[duplicate as usize].assume_init_ref().clone());
             }
         }
 
