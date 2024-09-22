@@ -4,11 +4,5 @@ description = "Companion macros for Pinocchio"
 version = "0.0.1"
 edition = "2021"
 
-[lib]
-proc-macro = true
-
 [dependencies]
-bs58 = "0.5.1"
-proc-macro2 = "1.0.46"
-quote = "^1.0"
-syn = { version = "^1.0", features = ["extra-traits", "full"] }
+five8_const = "0.1.3"

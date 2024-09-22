@@ -1,18 +1,28 @@
-mod parse;
-use parse::{DeclareId, Pubkey};
+pub mod pubkey;
 
-use proc_macro::TokenStream;
-use quote::quote;
-use syn::parse_macro_input;
-
-#[proc_macro]
-pub fn pubkey(input: TokenStream) -> TokenStream {
-    let id = parse_macro_input!(input as Pubkey);
-    TokenStream::from(quote! {#id})
+#[macro_export]
+macro_rules! declare_pubkey {
+    ( $id:expr ) => {
+        pinocchio_macro::pubkey::decode($id)
+    };
 }
 
-#[proc_macro]
-pub fn declare_id(input: TokenStream) -> TokenStream {
-    let id = parse_macro_input!(input as DeclareId);
-    TokenStream::from(quote! {#id})
+#[macro_export]
+macro_rules! declare_id {
+    ( $id:expr ) => {
+        #[doc = "The const program ID."]
+        pub const ID: pinocchio::pubkey::Pubkey = pinocchio_macro::pubkey::decode($id);
+
+        #[doc = "Returns `true` if given pubkey is the program ID."]
+        #[inline]
+        pub fn check_id(id: &pinocchio::pubkey::Pubkey) -> bool {
+            id == &ID
+        }
+
+        #[doc = "Returns the program ID."]
+        #[inline]
+        pub const fn id() -> pinocchio::pubkey::Pubkey {
+            ID
+        }
+    };
 }
