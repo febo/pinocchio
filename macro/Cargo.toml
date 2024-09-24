@@ -1,8 +1,0 @@
-[package]
-name = "pinocchio-macro"
-description = "Companion macros for Pinocchio"
-version = "0.0.1"
-edition = "2021"
-
-[dependencies]
-five8_const = "0.1.3"

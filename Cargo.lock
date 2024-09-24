@@ -22,8 +22,9 @@ name = "pinocchio"
 version = "0.0.1"
 
 [[package]]
-name = "pinocchio-macro"
+name = "pinocchio-pubkey"
 version = "0.0.1"
 dependencies = [
  "five8_const",
+ "pinocchio",
 ]

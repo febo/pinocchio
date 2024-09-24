@@ -1,0 +1,9 @@
+[package]
+name = "pinocchio-pubkey"
+description = "Companion pubkey helpers for Pinocchio"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+five8_const = "0.1.3"
+pinocchio = { version="0.0.1", path="../pinocchio" }
