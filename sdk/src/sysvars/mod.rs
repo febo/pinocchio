@@ -1,4 +1,4 @@
-//! Provides access to system accounts.
+//! Provides access to cluster system accounts.
 
 use crate::program_error::ProgramError;
 

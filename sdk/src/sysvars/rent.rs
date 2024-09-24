@@ -1,4 +1,4 @@
-//! This account contains the current cluster rent
+//! This account contains the current cluster rent.
 //!
 //! This is required for the rent sysvar implementation.
 

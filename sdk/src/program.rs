@@ -1,3 +1,5 @@
+//! Cross-program invocation helpers.
+
 use core::mem::MaybeUninit;
 
 use crate::{
