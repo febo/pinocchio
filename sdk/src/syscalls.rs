@@ -1,3 +1,5 @@
+//! Syscall functions.
+
 use crate::{
     instruction::{AccountMeta, ProcessedSiblingInstruction},
     pubkey::Pubkey,

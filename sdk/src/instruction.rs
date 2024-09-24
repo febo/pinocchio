@@ -1,3 +1,5 @@
+//! Instruction types.
+
 use core::marker::PhantomData;
 
 use crate::{account_info::AccountInfo, pubkey::Pubkey};

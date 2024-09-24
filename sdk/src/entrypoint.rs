@@ -1,3 +1,6 @@
+//! Macros and functions for defining the program entrypoint and setting up
+//! global handlers.
+
 use core::{alloc::Layout, mem::size_of, ptr::null_mut, slice::from_raw_parts};
 
 use crate::{
@@ -150,11 +153,7 @@ pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
 
     let processed = if total_accounts > 0 {
         // number of accounts to process (limited to MAX_ACCOUNTS)
-        let processed = if total_accounts > MAX_ACCOUNTS {
-            MAX_ACCOUNTS
-        } else {
-            total_accounts
-        };
+        let processed = core::cmp::min(total_accounts, MAX_ACCOUNTS);
 
         for i in 0..processed {
             let duplicate = *(input.add(offset) as *const u8);
@@ -171,7 +170,7 @@ pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
 
                 accounts[i].write(AccountInfo { raw: account_info });
             } else {
-                offset += 8;
+                offset += core::mem::size_of::<u64>();
                 // duplicate account, clone the original pointer
                 accounts[i].write(accounts[duplicate as usize].assume_init_ref().clone());
             }
@@ -191,7 +190,7 @@ pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
                 offset += (offset as *const u8).align_offset(BPF_ALIGN_OF_U128);
                 offset += core::mem::size_of::<u64>();
             } else {
-                offset += 8;
+                offset += core::mem::size_of::<u64>();
             }
         }
 
@@ -202,7 +201,6 @@ pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
     };
 
     // instruction data
-    #[allow(clippy::cast_ptr_alignment)]
     let instruction_data_len = *(input.add(offset) as *const u64) as usize;
     offset += core::mem::size_of::<u64>();
 

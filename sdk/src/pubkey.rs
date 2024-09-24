@@ -1,3 +1,5 @@
+//! Public key type and functions.
+
 /// maximum length of derived `Pubkey` seed
 pub const MAX_SEED_LEN: usize = 32;
 
