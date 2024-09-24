@@ -17,6 +17,7 @@ pub struct Transfer<'a> {
 }
 
 impl<'a> Transfer<'a> {
+    #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
     }

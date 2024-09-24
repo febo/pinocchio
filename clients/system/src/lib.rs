@@ -1,3 +1,5 @@
+#![no_std]
+
 use pinocchio::declare_id;
 
 pub mod instructions;
