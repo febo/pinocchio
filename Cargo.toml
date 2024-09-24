@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
 members = [
-    "sdk",
-    "macro"
+    "sdk/pinocchio",
+    "sdk/pubkey",
 ]
