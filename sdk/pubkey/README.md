@@ -1,4 +1,4 @@
-# <img width="250" alt="pinocchio-macro" src="https://github.com/user-attachments/assets/d6c34b56-81ed-4ea1-a0d5-6d9eebe6e95b"/>
+# <img width="250" alt="pinocchio-pubkey" src="https://github.com/user-attachments/assets/de950d77-1f02-4d52-a2a8-fbf4029aa2dc"/>
 
 Companion `Pubkey` helpers [`pinocchio`](https://github.com/febo/pinocchio).
 
