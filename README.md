@@ -39,9 +39,9 @@ The library defines:
 
 ## Features
 
-* `no_std` crate.
-* Efficient `entrypoint!` definition – no copies or allocations.
-* Improved CU consumption of cross-program invocations.
+* Zero dependencies and `no_std` crate
+* Efficient `entrypoint!` definition – no copies or allocations
+* Improved CU consumption of cross-program invocations
 
 ## Getting started
 
