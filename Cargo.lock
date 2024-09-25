@@ -28,3 +28,11 @@ dependencies = [
  "five8_const",
  "pinocchio",
 ]
+
+[[package]]
+name = "pinocchio-system"
+version = "0.0.0"
+dependencies = [
+ "pinocchio",
+ "pinocchio-pubkey",
+]

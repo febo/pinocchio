@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "programs/system",
     "sdk/pinocchio",
     "sdk/pubkey",
 ]
