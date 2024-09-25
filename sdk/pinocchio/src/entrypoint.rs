@@ -229,14 +229,14 @@ macro_rules! custom_panic_default {
 macro_rules! custom_heap_default {
     () => {
         #[cfg(all(not(feature = "custom-heap"), target_os = "solana"))]
-        {
-            extern crate alloc;
-            #[global_allocator]
-            static A: $crate::entrypoint::BumpAllocator = $crate::entrypoint::BumpAllocator {
-                start: $crate::entrypoint::HEAP_START_ADDRESS as usize,
-                len: $crate::entrypoint::HEAP_LENGTH,
-            };
-        }
+        extern crate alloc;
+
+        #[cfg(all(not(feature = "custom-heap"), target_os = "solana"))]
+        #[global_allocator]
+        static A: $crate::entrypoint::BumpAllocator = $crate::entrypoint::BumpAllocator {
+            start: $crate::entrypoint::HEAP_START_ADDRESS as usize,
+            len: $crate::entrypoint::HEAP_LENGTH,
+        };
     };
 }
 
