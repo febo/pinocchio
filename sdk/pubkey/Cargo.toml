@@ -3,6 +3,9 @@ name = "pinocchio-pubkey"
 description = "Companion pubkey helpers for Pinocchio"
 version = "0.0.1"
 edition = "2021"
+license = "Apache-2.0"
+readme = "./README.md"
+repository = "https://github.com/febo/pinocchio"
 
 [dependencies]
 five8_const = "0.1.3"
