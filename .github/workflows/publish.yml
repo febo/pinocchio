@@ -3,6 +3,14 @@ name: Publish
 on:
   workflow_dispatch:
     inputs:
+      crate:
+        description: Crate
+        required: true
+        default: pinocchio
+        type: choice
+        options:
+          - pinocchio
+          - pubkey
       dry_run:
         description: Dry run
         required: true
@@ -39,10 +47,12 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
+          MANIFEST="./sdk/${{ inputs.crate }}/Cargo.toml"
+
           if [ "${{ inputs.dry_run }}" == "true" ]; then
             OPTIONS="--dry-run"
           else
             OPTIONS=""
           fi
 
-          cargo publish $OPTIONS
+          cargo publish --manifest-path $MANIFEST $OPTIONS
