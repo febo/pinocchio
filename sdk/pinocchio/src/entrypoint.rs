@@ -219,7 +219,7 @@ macro_rules! custom_panic_default {
         #[cfg(all(not(feature = "custom-panic"), target_os = "solana"))]
         #[no_mangle]
         fn custom_panic(info: &core::panic::PanicInfo<'_>) {
-            // Full panic reporting
+            // Full panic reporting.
             $crate::msg!("{}", info);
         }
     };
@@ -229,11 +229,14 @@ macro_rules! custom_panic_default {
 macro_rules! custom_heap_default {
     () => {
         #[cfg(all(not(feature = "custom-heap"), target_os = "solana"))]
-        #[global_allocator]
-        static A: $crate::entrypoint::BumpAllocator = $crate::entrypoint::BumpAllocator {
-            start: $crate::entrypoint::HEAP_START_ADDRESS as usize,
-            len: $crate::entrypoint::HEAP_LENGTH,
-        };
+        {
+            extern crate alloc;
+            #[global_allocator]
+            static A: $crate::entrypoint::BumpAllocator = $crate::entrypoint::BumpAllocator {
+                start: $crate::entrypoint::HEAP_START_ADDRESS as usize,
+                len: $crate::entrypoint::HEAP_LENGTH,
+            };
+        }
     };
 }
 
@@ -254,7 +257,7 @@ unsafe impl core::alloc::GlobalAlloc for BumpAllocator {
 
         let mut pos = *pos_ptr;
         if pos == 0 {
-            // First time, set starting position
+            // First time, set starting position.
             pos = self.start + self.len;
         }
         pos = pos.saturating_sub(layout.size());

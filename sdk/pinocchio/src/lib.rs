@@ -10,8 +10,6 @@
 
 #![no_std]
 
-extern crate alloc;
-
 pub mod account_info;
 pub mod entrypoint;
 pub mod instruction;

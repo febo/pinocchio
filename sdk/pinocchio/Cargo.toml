@@ -1,5 +1,8 @@
 [package]
 name = "pinocchio"
-description = "Create Solana programs with no strings attached"
+description = "Create Solana programs with no dependencies attached"
 version = "0.0.1"
 edition = "2021"
+license = "Apache-2.0"
+readme = "./README.md"
+repository = "https://github.com/febo/pinocchio"
