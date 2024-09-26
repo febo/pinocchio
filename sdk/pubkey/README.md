@@ -1,6 +1,6 @@
 # <img width="250" alt="pinocchio-pubkey" src="https://github.com/user-attachments/assets/de950d77-1f02-4d52-a2a8-fbf4029aa2dc"/>
 
-Companion `Pubkey` helpers [`pinocchio`](https://github.com/febo/pinocchio).
+Companion `Pubkey` helpers for [`pinocchio`](https://github.com/febo/pinocchio).
 
 This crate provides two convenience macros to resolve `Pubkey`s at compile time:
 
