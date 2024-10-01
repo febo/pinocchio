@@ -8,6 +8,16 @@ use crate::{program_error::ProgramError, pubkey::Pubkey, syscalls::sol_memset_};
 /// single realloc.
 pub const MAX_PERMITTED_DATA_INCREASE: usize = 1_024 * 10;
 
+#[macro_export]
+macro_rules! get_account_info {
+    ( $accounts:ident, $index:expr ) => {{
+        if $accounts.len() <= $index {
+            return Err($crate::program_error::ProgramError::NotEnoughAccountKeys);
+        }
+        &$accounts[$index]
+    }};
+}
+
 /// Raw account data.
 ///
 /// This data is wrapped in an `AccountInfo` struct, which provides safe access
