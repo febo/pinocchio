@@ -1,4 +1,4 @@
-//! A library to build a Solana Program in Rust.
+//! A library to build a Solana program in Rust.
 //!
 //! This library is intended to be used by on-chain programs only. It provides
 //! a zero-dependency library to minimise dependencies conflits. For off-chain
@@ -14,6 +14,7 @@ pub mod account_info;
 pub mod entrypoint;
 pub mod instruction;
 pub mod log;
+pub mod memory;
 pub mod program;
 pub mod program_error;
 pub mod pubkey;
