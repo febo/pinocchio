@@ -2,6 +2,7 @@ pub use five8_const::decode_32_const;
 pub use pinocchio;
 
 #[macro_export]
+#[deprecated(since = "0.1.1", note = "Please use `from_str` function instead.")]
 macro_rules! declare_pubkey {
     ( $id:expr ) => {
         $crate::decode($id)
@@ -12,7 +13,7 @@ macro_rules! declare_pubkey {
 macro_rules! declare_id {
     ( $id:expr ) => {
         #[doc = "The const program ID."]
-        pub const ID: $crate::pinocchio::pubkey::Pubkey = $crate::decode($id);
+        pub const ID: $crate::pinocchio::pubkey::Pubkey = $crate::from_str($id);
 
         #[doc = "Returns `true` if given pubkey is the program ID."]
         #[inline]
@@ -29,6 +30,12 @@ macro_rules! declare_id {
 }
 
 #[inline(always)]
+#[deprecated(since = "0.1.1", note = "Please use `from_str` function instead.")]
 pub const fn decode(value: &str) -> pinocchio::pubkey::Pubkey {
+    from_str(value)
+}
+
+#[inline(always)]
+pub const fn from_str(value: &str) -> pinocchio::pubkey::Pubkey {
     decode_32_const(value)
 }
