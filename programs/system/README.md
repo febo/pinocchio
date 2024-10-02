@@ -1,11 +1,11 @@
-# `system`
+# <img width="250" alt="pinocchio-system" src="https://github.com/user-attachments/assets/6a775333-c3a1-4623-aa7a-afdc8c492594"/>
 
-[`pinocchio`](https://crates.io/crates/pinocchio) helpers to perform cross-program invocations (CPIs) for System program instructions.
+This crate contains [`pinocchio`](https://crates.io/crates/pinocchio) helpers to perform cross-program invocations (CPIs) for System program instructions.
 
 Each instruction defines an `struct` with the accounts and parameters required. Once all values are set, you can call directly `invoke` or `invoke_signed` to perform the CPI.
 
 > [!IMPORTANT]
-> The API defined in this crate should be considered experimental.
+> The API defined in this crate is subject to change.
 
 ## Examples
 
