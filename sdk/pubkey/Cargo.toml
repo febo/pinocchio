@@ -9,4 +9,4 @@ repository = "https://github.com/febo/pinocchio"
 
 [dependencies]
 five8_const = "0.1.3"
-pinocchio = { version="0.1", path="../pinocchio" }
+pinocchio = { version="<= 0.2", path="../pinocchio" }
