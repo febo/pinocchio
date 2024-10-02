@@ -31,7 +31,7 @@ dependencies = [
 
 [[package]]
 name = "pinocchio-system"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "pinocchio",
  "pinocchio-pubkey",
