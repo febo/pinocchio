@@ -3,6 +3,9 @@ name = "pinocchio-system"
 description = "Pinocchio helpers to invoke System program instructions"
 version = "0.0.0"
 edition = "2021"
+license = "Apache-2.0"
+readme = "./README.md"
+repository = "https://github.com/febo/pinocchio"
 
 [dependencies]
 pinocchio = { version="^0", path="../../sdk/pinocchio" }
