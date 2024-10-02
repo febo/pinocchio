@@ -7,6 +7,10 @@ use pinocchio::{
 };
 
 /// Create a new account.
+///
+/// ### Accounts:
+///   0. `[WRITE, SIGNER]` Funding account
+///   1. `[WRITE, SIGNER]` New account
 pub struct CreateAccount<'a> {
     /// Funding account.
     pub from: &'a AccountInfo,

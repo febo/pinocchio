@@ -1,13 +1,27 @@
 mod advance_nonce_account;
+mod allocate;
+mod allocate_with_seed;
 mod assign;
+mod assign_with_seed;
+mod authorize_nonce_account;
 mod create_account;
 mod create_account_with_seed;
+mod initialize_nonce_account;
 mod transfer;
+mod transfer_with_seed;
+mod update_nonce_account;
 mod withdraw_nonce_account;
 
 pub use advance_nonce_account::*;
+pub use allocate::*;
+pub use allocate_with_seed::*;
 pub use assign::*;
+pub use assign_with_seed::*;
+pub use authorize_nonce_account::*;
 pub use create_account::*;
 pub use create_account_with_seed::*;
+pub use initialize_nonce_account::*;
 pub use transfer::*;
+pub use transfer_with_seed::*;
+pub use update_nonce_account::*;
 pub use withdraw_nonce_account::*;

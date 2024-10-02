@@ -5,6 +5,11 @@ use pinocchio::{
     program::invoke_signed,
 };
 
+/// Transfer lamports.
+///
+/// ### Accounts:
+///   0. `[WRITE, SIGNER]` Funding account
+///   1. `[WRITE]` Recipient account
 pub struct Transfer<'a> {
     /// Funding account.
     pub from: &'a AccountInfo,
@@ -33,7 +38,6 @@ impl<'a> Transfer<'a> {
         // -  [0..4 ]: instruction discriminator
         // -  [4..12]: lamports amount
         let mut instruction_data = [0; 12];
-        // transfer instruction has a '2' discriminator
         instruction_data[0] = 2;
         instruction_data[4..12].copy_from_slice(&self.lamports.to_le_bytes());
 

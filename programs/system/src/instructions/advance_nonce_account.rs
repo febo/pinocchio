@@ -5,6 +5,12 @@ use pinocchio::{
     program::invoke_signed,
 };
 
+/// Consumes a stored nonce, replacing it with a successor.
+///
+/// ### Accounts:
+///   0. `[WRITE]` Nonce account
+///   1. `[]` RecentBlockhashes sysvar
+///   2. `[SIGNER]` Nonce authority
 pub struct AdvanceNonceAccount<'a> {
     /// Nonce account.
     pub account: &'a AccountInfo,
@@ -30,18 +36,17 @@ impl<'a> AdvanceNonceAccount<'a> {
             AccountMeta::readonly_signer(self.authority.key()),
         ];
 
-        // instruction data
-        // -  [0..4 ]: instruction discriminator
-        let mut instruction_data = [0; 4];
-        // assign instruction has a '1' discriminator
-        instruction_data[0] = 4;
-
+        // instruction
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: &instruction_data,
+            data: &[4],
         };
 
-        invoke_signed(&instruction, &[self.account], signers)
+        invoke_signed(
+            &instruction,
+            &[self.account, self.recent_blockhashes_sysvar, self.authority],
+            signers,
+        )
     }
 }

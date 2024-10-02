@@ -3,22 +3,21 @@ use pinocchio::{
     entrypoint::ProgramResult,
     instruction::{AccountMeta, Instruction, Signer},
     program::invoke_signed,
-    pubkey::Pubkey,
 };
 
-/// Assign account to a program
+/// Allocate space in a (possibly new) account without funding.
 ///
 /// ### Accounts:
-///   0. `[WRITE, SIGNER]` Assigned account public key
-pub struct Assign<'a, 'b> {
+///   0. `[WRITE, SIGNER]` New account
+pub struct Allocate<'a> {
     /// Account to be assigned.
     pub account: &'a AccountInfo,
 
-    /// Program account to assign as owner.
-    pub owner: &'b Pubkey,
+    /// Number of bytes of memory to allocate.
+    pub space: u64,
 }
 
-impl<'a, 'b> Assign<'a, 'b> {
+impl<'a> Allocate<'a> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
@@ -30,10 +29,10 @@ impl<'a, 'b> Assign<'a, 'b> {
 
         // instruction data
         // -  [0..4 ]: instruction discriminator
-        // -  [4..36]: owner pubkey
-        let mut instruction_data = [0; 36];
-        instruction_data[0] = 1;
-        instruction_data[4..36].copy_from_slice(self.owner.as_ref());
+        // -  [4..12]: space
+        let mut instruction_data = [0; 12];
+        instruction_data[0] = 8;
+        instruction_data[4..12].copy_from_slice(&self.space.to_le_bytes());
 
         let instruction = Instruction {
             program_id: &crate::ID,

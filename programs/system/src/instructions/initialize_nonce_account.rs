@@ -3,25 +3,24 @@ use pinocchio::{
     entrypoint::ProgramResult,
     instruction::{AccountMeta, Instruction, Signer},
     program::invoke_signed,
+    pubkey::Pubkey,
 };
 
-/// Withdraw funds from a nonce account.
+/// Drive state of Uninitialized nonce account to Initialized, setting the nonce value.
 ///
-/// The `u64` parameter is the lamports to withdraw, which must leave the
-/// account balance above the rent exempt reserve or at zero.
+/// The `Pubkey` parameter specifies the entity authorized to execute nonce
+/// instruction on the account
+///
+/// No signatures are required to execute this instruction, enabling derived
+/// nonce account addresses.
 ///
 /// ### Accounts:
 ///   0. `[WRITE]` Nonce account
-///   1. `[WRITE]` Recipient account
-///   2. `[]` RecentBlockhashes sysvar
-///   3. `[]` Rent sysvar
-///   4. `[SIGNER]` Nonce authority
-pub struct WithdrawNonceAccount<'a> {
+///   1. `[]` RecentBlockhashes sysvar
+///   2. `[]` Rent sysvar
+pub struct InitializeNonceAccount<'a, 'b> {
     /// Nonce account.
     pub account: &'a AccountInfo,
-
-    /// Recipient account.
-    pub recipient: &'a AccountInfo,
 
     /// RecentBlockhashes sysvar.
     pub recent_blockhashes_sysvar: &'a AccountInfo,
@@ -29,17 +28,14 @@ pub struct WithdrawNonceAccount<'a> {
     /// Rent sysvar.
     pub rent_sysvar: &'a AccountInfo,
 
-    /// Nonce authority.
-    pub authority: &'a AccountInfo,
-
     /// Lamports to withdraw.
     ///
     /// The account balance muat be left above the rent exempt reserve
     /// or at zero.
-    pub lamports: u64,
+    pub authority: &'b Pubkey,
 }
 
-impl<'a> WithdrawNonceAccount<'a> {
+impl<'a, 'b> InitializeNonceAccount<'a, 'b> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
@@ -47,20 +43,18 @@ impl<'a> WithdrawNonceAccount<'a> {
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
         // account metadata
-        let account_metas: [AccountMeta; 5] = [
+        let account_metas: [AccountMeta; 3] = [
             AccountMeta::writable(self.account.key()),
-            AccountMeta::writable(self.recipient.key()),
             AccountMeta::readonly(self.recent_blockhashes_sysvar.key()),
             AccountMeta::readonly(self.rent_sysvar.key()),
-            AccountMeta::readonly_signer(self.authority.key()),
         ];
 
         // instruction data
         // -  [0..4 ]: instruction discriminator
-        // -  [4..12]: lamports
-        let mut instruction_data = [0; 12];
-        instruction_data[0] = 5;
-        instruction_data[4..12].copy_from_slice(&self.lamports.to_le_bytes());
+        // -  [4..36]: authority pubkey
+        let mut instruction_data = [0; 36];
+        instruction_data[0] = 6;
+        instruction_data[4..36].copy_from_slice(self.authority);
 
         let instruction = Instruction {
             program_id: &crate::ID,
@@ -72,10 +66,8 @@ impl<'a> WithdrawNonceAccount<'a> {
             &instruction,
             &[
                 self.account,
-                self.recipient,
                 self.recent_blockhashes_sysvar,
                 self.rent_sysvar,
-                self.authority,
             ],
             signers,
         )

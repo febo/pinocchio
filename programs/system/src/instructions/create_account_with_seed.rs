@@ -7,6 +7,13 @@ use pinocchio::{
 };
 
 /// Create a new account at an address derived from a base pubkey and a seed.
+///
+/// ### Accounts:
+///   0. `[WRITE, SIGNER]` Funding account
+///   1. `[WRITE]` Created account
+///   2. `[SIGNER]` (optional) Base account; the account matching the base Pubkey below must be
+///                          provided as a signer, but may be the same as the funding account
+///             
 pub struct CreateAccountWithSeed<'a, 'b, 'c> {
     /// Funding account.
     pub from: &'a AccountInfo,
@@ -57,7 +64,6 @@ impl<'a, 'b, 'c> CreateAccountWithSeed<'a, 'b, 'c> {
         // - [..  +8]: account space
         // - [.. +32]: owner pubkey
         let mut instruction_data = [0; 120];
-        // create account with seed instruction has a '3' discriminator
         instruction_data[0] = 3;
         instruction_data[4..36].copy_from_slice(self.base.unwrap_or(self.from).key());
         instruction_data[36..40].copy_from_slice(&u32::to_le_bytes(self.seed.len() as u32));
@@ -74,6 +80,10 @@ impl<'a, 'b, 'c> CreateAccountWithSeed<'a, 'b, 'c> {
             data: &instruction_data[..offset + 48],
         };
 
-        invoke_signed(&instruction, &[self.from, self.to], signers)
+        invoke_signed(
+            &instruction,
+            &[self.from, self.to, self.base.unwrap_or(self.from)],
+            signers,
+        )
     }
 }
