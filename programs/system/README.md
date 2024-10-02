@@ -4,8 +4,7 @@ This crate contains [`pinocchio`](https://crates.io/crates/pinocchio) helpers to
 
 Each instruction defines an `struct` with the accounts and parameters required. Once all values are set, you can call directly `invoke` or `invoke_signed` to perform the CPI.
 
-> [!IMPORTANT]
-> The API defined in this crate is subject to change.
+> **Note:** The API defined in this crate is subject to change.
 
 ## Examples
 
