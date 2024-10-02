@@ -13,10 +13,10 @@ This is a `no_std` crate.
 Creating a new account:
 ```rust
 // This example assumes that the instruction receives a writable signer `payer_info`
-// and `new_account` accounts.
+// and `new_account_info` accounts.
 CreateAccount {
     from: payer_info,
-    to: new_account,
+    to: new_account_info,
     lamports: 1_000_000_000, // 1 SOL
     space: 200,              // 200 bytes
     owner: &spl_token::ID,
@@ -26,10 +26,10 @@ CreateAccount {
 Performing a transfer of lamports:
 ```rust
 // This example assumes that the instruction receives a writable signer `payer_info`
-// account and a writable `recipient` account.
+// account and a writable `recipient_info` account.
 Transfer {
     from: payer_info,
-    to: recipient,
+    to: recipient_info,
     lamports: 500_000_000, // 0.5 SOL
 }.invoke()?;
 ```
