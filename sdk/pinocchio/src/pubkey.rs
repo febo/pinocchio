@@ -16,8 +16,10 @@ pub const MAX_SEEDS: usize = 16;
 /// [account]: https://solana.com/docs/core/accounts
 pub type Pubkey = [u8; PUBKEY_BYTES];
 
-/// Checks two pubkeys for equality in a computationally efficient way using
-/// `sol_memcmp`.
+/// Checks two pubkeys for equality using `sol_memcmp`.
+///
+/// Using `Pubkey::eq` (or `=`) is preferred over this function.
+#[inline]
 pub fn compare(a: &Pubkey, b: &Pubkey) -> bool {
     // Safety:
     //
@@ -25,8 +27,11 @@ pub fn compare(a: &Pubkey, b: &Pubkey) -> bool {
     unsafe { sol_memcmp(a, b, PUBKEY_BYTES) == 0 }
 }
 
-/// Copy `source` pubkey into `destination` in a computationally efficient way
-/// using `sol_memcpy`.
+/// Copy `source` pubkey into `destination` using `sol_memcpy`.
+///
+/// Using a standard assignment (e.g. `destination = source`) is preferred
+/// over this function.
+#[inline]
 pub fn copy(destination: &mut Pubkey, source: &Pubkey) {
     // Safety:
     //
@@ -35,6 +40,7 @@ pub fn copy(destination: &mut Pubkey, source: &Pubkey) {
 }
 
 /// Log a `Pubkey` from a program
+#[inline]
 pub fn log(pubkey: &Pubkey) {
     #[cfg(target_os = "solana")]
     unsafe {
