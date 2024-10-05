@@ -48,6 +48,12 @@ impl<'a> From<&Instruction<'a, '_, '_, '_>> for CInstruction<'a> {
     }
 }
 
+/// Invoke a cross-program instruction.
+///
+/// # Important
+///
+/// The accounts on the `account_infos` slice must be in the same order as the
+/// `accounts` field of the `instruction`.
 pub fn invoke<const ACCOUNTS: usize>(
     instruction: &Instruction,
     account_infos: &[&AccountInfo; ACCOUNTS],
@@ -55,6 +61,12 @@ pub fn invoke<const ACCOUNTS: usize>(
     invoke_signed(instruction, account_infos, &[])
 }
 
+/// Invoke a cross-program instruction with signatures.
+///
+/// # Important
+///
+/// The accounts on the `account_infos` slice must be in the same order as the
+/// `accounts` field of the `instruction`.
 pub fn invoke_signed<const ACCOUNTS: usize>(
     instruction: &Instruction,
     account_infos: &[&AccountInfo; ACCOUNTS],
@@ -109,6 +121,11 @@ pub fn invoke_signed<const ACCOUNTS: usize>(
 /// borrowed within the calling program, and that data is written to by the
 /// callee, then Rust's aliasing rules will be violated and cause undefined
 /// behavior.
+///
+/// # Important
+///
+/// The accounts on the `account_infos` slice must be in the same order as the
+/// `accounts` field of the `instruction`.
 pub unsafe fn invoke_unchecked(instruction: &Instruction, accounts: &[Account]) {
     invoke_signed_unchecked(instruction, accounts, &[])
 }
@@ -126,6 +143,11 @@ pub unsafe fn invoke_unchecked(instruction: &Instruction, accounts: &[Account]) 
 /// borrowed within the calling program, and that data is written to by the
 /// callee, then Rust's aliasing rules will be violated and cause undefined
 /// behavior.
+///
+/// # Important
+///
+/// The accounts on the `account_infos` slice must be in the same order as the
+/// `accounts` field of the `instruction`.
 pub unsafe fn invoke_signed_unchecked(
     instruction: &Instruction,
     accounts: &[Account],
