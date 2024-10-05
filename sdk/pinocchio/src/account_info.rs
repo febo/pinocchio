@@ -160,9 +160,9 @@ impl AccountInfo {
     ///
     /// # Safety
     ///
-    /// This does not check or modify the 4-bit refcell. Useful when instruction
-    /// has verified non-duplicate accounts.
-    pub unsafe fn unchecked_borrow_lamports(&self) -> &u64 {
+    /// This method is unsafe because it does not return a `Ref`, thus leaving the borrow
+    /// flag untouched. Useful when an instruction has verified non-duplicate accounts.
+    pub unsafe fn borrow_lamports_unchecked(&self) -> &u64 {
         &(*self.raw).lamports
     }
 
@@ -170,10 +170,10 @@ impl AccountInfo {
     ///
     /// # Safety
     ///
-    /// This does not check or modify the 4-bit refcell. Useful when instruction
-    /// has verified non-duplicate accounts.
+    /// This method is unsafe because it does not return a `Ref`, thus leaving the borrow
+    /// flag untouched. Useful when an instruction has verified non-duplicate accounts.
     #[allow(clippy::mut_from_ref)]
-    pub unsafe fn unchecked_borrow_mut_lamports(&self) -> &mut u64 {
+    pub unsafe fn borrow_mut_lamports_unchecked(&self) -> &mut u64 {
         &mut (*self.raw).lamports
     }
 
@@ -181,9 +181,9 @@ impl AccountInfo {
     ///
     /// # Safety
     ///
-    /// This does not check or modify the 4-bit refcell. Useful when instruction
-    /// has verified non-duplicate accounts.
-    pub unsafe fn unchecked_borrow_data(&self) -> &[u8] {
+    /// This method is unsafe because it does not return a `Ref`, thus leaving the borrow
+    /// flag untouched. Useful when an instruction has verified non-duplicate accounts.
+    pub unsafe fn borrow_data_unchecked(&self) -> &[u8] {
         core::slice::from_raw_parts(self.data_ptr(), self.data_len())
     }
 
@@ -191,10 +191,10 @@ impl AccountInfo {
     ///
     /// # Safety
     ///
-    /// This does not check or modify the 4-bit refcell. Useful when instruction
-    /// has verified non-duplicate accounts.
+    /// This method is unsafe because it does not return a `Ref`, thus leaving the borrow
+    /// flag untouched. Useful when an instruction has verified non-duplicate accounts.
     #[allow(clippy::mut_from_ref)]
-    pub unsafe fn unchecked_borrow_mut_data(&self) -> &mut [u8] {
+    pub unsafe fn borrow_mut_data_unchecked(&self) -> &mut [u8] {
         core::slice::from_raw_parts_mut(self.data_ptr(), self.data_len())
     }
 
@@ -219,7 +219,7 @@ impl AccountInfo {
         // return the reference to lamports
         Ok(Ref {
             value: unsafe { &(*self.raw).lamports },
-            state: unsafe { NonNull::new_unchecked(&mut (*self.raw).borrow_state) },
+            state: unsafe { NonNull::new_unchecked(borrow_state) },
             borrow_shift: LAMPORTS_SHIFT,
         })
     }
@@ -240,7 +240,7 @@ impl AccountInfo {
         // return the mutable reference to lamports
         Ok(RefMut {
             value: unsafe { &mut (*self.raw).lamports },
-            state: unsafe { NonNull::new_unchecked(&mut (*self.raw).borrow_state) },
+            state: unsafe { NonNull::new_unchecked(borrow_state) },
             borrow_mask: LAMPORTS_MASK,
         })
     }
@@ -257,7 +257,7 @@ impl AccountInfo {
         }
 
         // check if we have reached the max immutable data borrow count (7)
-        if *borrow_state & 0b0111 == 0b0111 {
+        if *borrow_state & 0b_0111 == 0b0111 {
             return Err(ProgramError::AccountBorrowFailed);
         }
 
@@ -267,7 +267,7 @@ impl AccountInfo {
         // return the reference to data
         Ok(Ref {
             value: unsafe { core::slice::from_raw_parts(self.data_ptr(), self.data_len()) },
-            state: unsafe { NonNull::new_unchecked(&mut (*self.raw).borrow_state) },
+            state: unsafe { NonNull::new_unchecked(borrow_state) },
             borrow_shift: DATA_SHIFT,
         })
     }
@@ -283,12 +283,12 @@ impl AccountInfo {
         }
 
         // set the mutable data borrow flag
-        *borrow_state |= 0b0000_1000;
+        *borrow_state |= 0b_0000_1000;
 
         // return the mutable reference to data
         Ok(RefMut {
             value: unsafe { from_raw_parts_mut(self.data_ptr(), self.data_len()) },
-            state: unsafe { NonNull::new_unchecked(&mut (*self.raw).borrow_state) },
+            state: unsafe { NonNull::new_unchecked(borrow_state) },
             borrow_mask: DATA_MASK,
         })
     }
