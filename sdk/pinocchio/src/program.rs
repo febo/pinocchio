@@ -54,6 +54,7 @@ impl<'a> From<&Instruction<'a, '_, '_, '_>> for CInstruction<'a> {
 ///
 /// The accounts on the `account_infos` slice must be in the same order as the
 /// `accounts` field of the `instruction`.
+#[inline(always)]
 pub fn invoke<const ACCOUNTS: usize>(
     instruction: &Instruction,
     account_infos: &[&AccountInfo; ACCOUNTS],
@@ -126,6 +127,7 @@ pub fn invoke_signed<const ACCOUNTS: usize>(
 ///
 /// The accounts on the `account_infos` slice must be in the same order as the
 /// `accounts` field of the `instruction`.
+#[inline(always)]
 pub unsafe fn invoke_unchecked(instruction: &Instruction, accounts: &[Account]) {
     invoke_signed_unchecked(instruction, accounts, &[])
 }
