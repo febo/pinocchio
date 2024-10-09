@@ -1,6 +1,6 @@
 //! Instruction types.
 
-use core::marker::PhantomData;
+use core::{marker::PhantomData, mem::MaybeUninit};
 
 use crate::{account_info::AccountInfo, pubkey::Pubkey};
 
@@ -207,6 +207,23 @@ impl<'a, 'b> From<&'b [Seed<'a>]> for Signer<'a, 'b> {
         Self {
             seeds: value.as_ptr(),
             len: value.len() as u64,
+            _seeds: PhantomData::<&'b [Seed<'a>]>,
+        }
+    }
+}
+
+impl<'a, 'b> Signer<'a, 'b> {
+    pub fn from_slice<const SEEDS: usize>(seeds: &'b [&'a [u8]; SEEDS]) -> Self {
+        const UNINIT: MaybeUninit<Seed> = core::mem::MaybeUninit::uninit();
+        let mut signer_seeds = [UNINIT; SEEDS];
+
+        seeds.iter().enumerate().for_each(|(i, seed)| {
+            signer_seeds[i].write(Seed::from(*seed));
+        });
+
+        Self {
+            seeds: signer_seeds.as_ptr() as *const Seed,
+            len: SEEDS as u64,
             _seeds: PhantomData::<&'b [Seed<'a>]>,
         }
     }
