@@ -1,7 +1,5 @@
 //! Public key type and functions.
 
-use crate::memory::{sol_memcmp, sol_memcpy};
-
 /// Number of bytes in a pubkey
 pub const PUBKEY_BYTES: usize = 32;
 
@@ -15,29 +13,6 @@ pub const MAX_SEEDS: usize = 16;
 ///
 /// [account]: https://solana.com/docs/core/accounts
 pub type Pubkey = [u8; PUBKEY_BYTES];
-
-/// Checks two pubkeys for equality using `sol_memcmp`.
-///
-/// Using `Pubkey::eq` (or `=`) is preferred over this function.
-#[inline]
-pub fn compare(a: &Pubkey, b: &Pubkey) -> bool {
-    // Safety:
-    //
-    // This method guarantees that the two arrays are of the same length.
-    unsafe { sol_memcmp(a, b, PUBKEY_BYTES) == 0 }
-}
-
-/// Copy `source` pubkey into `destination` using `sol_memcpy`.
-///
-/// Using a standard assignment (e.g. `destination = source`) is preferred
-/// over this function.
-#[inline]
-pub fn copy(destination: &mut Pubkey, source: &Pubkey) {
-    // Safety:
-    //
-    // This method guarantees that the two arrays are of the same length.
-    unsafe { sol_memcpy(destination, source, PUBKEY_BYTES) }
-}
 
 /// Log a `Pubkey` from a program
 #[inline]
