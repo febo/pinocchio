@@ -2,7 +2,7 @@
 //!
 //! This library is intended to be used by on-chain programs only. It provides
 //! a zero-dependency library to minimise dependencies conflits. For off-chain
-//! programs, use instead the [`solana-sdk`] crate, which reexports all modules
+//! programs, use instead the [`solana-sdk`] crate, which re-exports all modules
 //! from [`solana-program`].
 //!
 //! [`solana-sdk`]: https://docs.rs/solana-sdk/latest/solana_sdk/
