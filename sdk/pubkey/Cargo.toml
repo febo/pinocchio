@@ -1,7 +1,7 @@
 [package]
 name = "pinocchio-pubkey"
 description = "Companion pubkey helpers for Pinocchio"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 license = "Apache-2.0"
 readme = "./README.md"
@@ -9,4 +9,4 @@ repository = "https://github.com/febo/pinocchio"
 
 [dependencies]
 five8_const = "0.1.3"
-pinocchio = { version="<= 0.2", path="../pinocchio" }
+pinocchio = { version="<= 0.3", path="../pinocchio" }
