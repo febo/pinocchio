@@ -1,12 +1,12 @@
 [package]
 name = "pinocchio-system"
 description = "Pinocchio helpers to invoke System program instructions"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 license = "Apache-2.0"
 readme = "./README.md"
 repository = "https://github.com/febo/pinocchio"
 
 [dependencies]
-pinocchio = { version="> 0.1, <= 0.3", path="../../sdk/pinocchio" }
+pinocchio = { version="> 0.1, <= 0.4", path="../../sdk/pinocchio" }
 pinocchio-pubkey = { version="0.1", path="../../sdk/pubkey" }
