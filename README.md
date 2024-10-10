@@ -73,7 +73,7 @@ pub fn process_instruction(
 }
 ```
 
-> [!IMPORTANT]
+> ⚠️ **Note:**
 > You should use the types from the `pinocchio` crate instead of `solana-program`. If you need to invoke a different program, you will need to redefine its instruction builder to create an equivalent instruction data using `pinocchio` types.
 
 ## License
