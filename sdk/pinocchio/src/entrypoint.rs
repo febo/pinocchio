@@ -108,6 +108,7 @@ macro_rules! entrypoint {
         });
     };
     ( $process_instruction:ident, $maximum:expr ) => {
+        /// Program entrypoint.
         #[no_mangle]
         pub unsafe extern "C" fn entrypoint(input: *mut u8) -> u64 {
             const UNINIT: core::mem::MaybeUninit<$crate::account_info::AccountInfo> =
@@ -216,6 +217,7 @@ pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
 #[macro_export]
 macro_rules! custom_panic_default {
     () => {
+        /// Default panic handler.
         #[cfg(all(not(feature = "custom-panic"), target_os = "solana"))]
         #[no_mangle]
         fn custom_panic(info: &core::panic::PanicInfo<'_>) {
@@ -251,6 +253,7 @@ pub struct BumpAllocator {
 /// other use may overflow and is thus unsupported and at one's own risk.
 #[allow(clippy::arithmetic_side_effects)]
 unsafe impl core::alloc::GlobalAlloc for BumpAllocator {
+    /// Allocates memory as a bump allocator.
     #[inline]
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let pos_ptr = self.start as *mut usize;
