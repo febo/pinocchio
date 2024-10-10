@@ -1,6 +1,6 @@
 //! Instruction types.
 
-use core::{marker::PhantomData, mem::MaybeUninit};
+use core::{marker::PhantomData, ops::Deref};
 
 use crate::{account_info::AccountInfo, pubkey::Pubkey};
 
@@ -182,6 +182,24 @@ impl<'a> From<&'a [u8]> for Seed<'a> {
     }
 }
 
+impl<'a, const SIZE: usize> From<&'a [u8; SIZE]> for Seed<'a> {
+    fn from(value: &'a [u8; SIZE]) -> Self {
+        Self {
+            seed: value.as_ptr(),
+            len: value.len() as u64,
+            _bytes: PhantomData::<&[u8]>,
+        }
+    }
+}
+
+impl Deref for Seed<'_> {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { core::slice::from_raw_parts(self.seed, self.len as usize) }
+    }
+}
+
 /// Represents a [program derived address][pda] (PDA) signer controlled by the
 /// calling program.
 ///
@@ -212,18 +230,11 @@ impl<'a, 'b> From<&'b [Seed<'a>]> for Signer<'a, 'b> {
     }
 }
 
-impl<'a, 'b> Signer<'a, 'b> {
-    pub fn from_slice<const SEEDS: usize>(seeds: &'b [&'a [u8]; SEEDS]) -> Self {
-        const UNINIT: MaybeUninit<Seed> = core::mem::MaybeUninit::uninit();
-        let mut signer_seeds = [UNINIT; SEEDS];
-
-        seeds.iter().enumerate().for_each(|(i, seed)| {
-            signer_seeds[i].write(Seed::from(*seed));
-        });
-
+impl<'a, 'b, const SIZE: usize> From<&'b [Seed<'a>; SIZE]> for Signer<'a, 'b> {
+    fn from(value: &'b [Seed<'a>; SIZE]) -> Self {
         Self {
-            seeds: signer_seeds.as_ptr() as *const Seed,
-            len: SEEDS as u64,
+            seeds: value.as_ptr(),
+            len: value.len() as u64,
             _seeds: PhantomData::<&'b [Seed<'a>]>,
         }
     }
