@@ -1,11 +1,11 @@
 pub use five8_const::decode_32_const;
 pub use pinocchio;
 
+// Convenience macro to define a static public key.
 #[macro_export]
-#[deprecated(since = "0.1.1", note = "Please use `from_str` function instead.")]
 macro_rules! declare_pubkey {
-    ( $id:expr ) => {
-        $crate::decode($id)
+    ( $id:literal ) => {
+        $crate::from_str($id)
     };
 }
 
