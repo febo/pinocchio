@@ -2,6 +2,7 @@ use pinocchio::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
     instruction::{AccountMeta, Instruction, Signer},
+    msg,
     program::invoke_signed,
 };
 
@@ -70,7 +71,39 @@ impl<'a> Create<'a> {
             self.token_program,
         ];
 
+        log_instruction(&instruction, account_infos);
+
         // Invoke the instruction
         invoke_signed(&instruction, account_infos, signers)
+    }
+}
+
+pub fn log_instruction(instruction: &Instruction, account_infos: &[&AccountInfo]) {
+    pinocchio::msg!("Instruction {:?}", instruction.data);
+
+    pinocchio::msg!(
+        "{:<4} {:<44} {:<44} {:<10} {:<10} {:<10}",
+        "IxId",
+        "Key",
+        "Owner",
+        "Writable",
+        "Signer",
+        "Invoked"
+    );
+
+    for (i, account) in instruction.accounts.iter().enumerate() {
+        let is_writable = account.is_writable;
+        let is_signer = account.is_signer;
+        let is_invoked = account_infos[i].executable();
+
+        pinocchio::msg!(
+            "[{:<2}] {:<44} {:<44} {:<10} {:<10} {:<10}",
+            i,
+            bs58::encode(account.pubkey).into_string(),
+            bs58::encode(account_infos[i].owner()).into_string(),
+            is_writable,
+            is_signer,
+            is_invoked
+        );
     }
 }
