@@ -1,0 +1,12 @@
+[package]
+name = "pinocchio-token"
+description = "Pinocchio helpers to invoke Token/Token2022 program instructions"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+readme = "./README.md"
+repository = "https://github.com/febo/pinocchio"
+
+[dependencies]
+pinocchio = { version="> 0.1, <= 0.4", path="../../sdk/pinocchio" }
+pinocchio-pubkey = { version="0.1", path="../../sdk/pubkey" }
