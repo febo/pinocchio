@@ -1,6 +1,6 @@
 //! Data structures to represent account information.
 
-use core::{ptr::NonNull, slice::from_raw_parts_mut};
+use core::{marker::PhantomData, ptr::NonNull, slice::from_raw_parts_mut};
 
 use crate::{program_error::ProgramError, pubkey::Pubkey, syscalls::sol_memset_};
 
@@ -218,9 +218,10 @@ impl AccountInfo {
 
         // return the reference to lamports
         Ok(Ref {
-            value: unsafe { &(*self.raw).lamports },
+            value: unsafe { NonNull::from(&(*self.raw).lamports) },
             state: unsafe { NonNull::new_unchecked(borrow_state) },
             borrow_shift: LAMPORTS_SHIFT,
+            marker: PhantomData,
         })
     }
 
@@ -239,9 +240,10 @@ impl AccountInfo {
 
         // return the mutable reference to lamports
         Ok(RefMut {
-            value: unsafe { &mut (*self.raw).lamports },
+            value: unsafe { NonNull::from(&mut (*self.raw).lamports) },
             state: unsafe { NonNull::new_unchecked(borrow_state) },
             borrow_mask: LAMPORTS_MASK,
+            marker: PhantomData,
         })
     }
 
@@ -266,9 +268,15 @@ impl AccountInfo {
 
         // return the reference to data
         Ok(Ref {
-            value: unsafe { core::slice::from_raw_parts(self.data_ptr(), self.data_len()) },
+            value: unsafe {
+                NonNull::from(core::slice::from_raw_parts(
+                    self.data_ptr(),
+                    self.data_len(),
+                ))
+            },
             state: unsafe { NonNull::new_unchecked(borrow_state) },
             borrow_shift: DATA_SHIFT,
+            marker: PhantomData,
         })
     }
 
@@ -287,9 +295,10 @@ impl AccountInfo {
 
         // return the mutable reference to data
         Ok(RefMut {
-            value: unsafe { from_raw_parts_mut(self.data_ptr(), self.data_len()) },
+            value: unsafe { NonNull::from(from_raw_parts_mut(self.data_ptr(), self.data_len())) },
             state: unsafe { NonNull::new_unchecked(borrow_state) },
             borrow_mask: DATA_MASK,
+            marker: PhantomData,
         })
     }
 
@@ -340,7 +349,7 @@ impl AccountInfo {
             // set new length in the serialized data
             *(data_ptr.offset(-8) as *mut u64) = new_len as u64;
             // recreate the local slice with the new length
-            data.value = from_raw_parts_mut(data_ptr, new_len);
+            data.value = NonNull::from(from_raw_parts_mut(data_ptr, new_len));
         }
 
         if zero_init {
@@ -373,17 +382,66 @@ const DATA_SHIFT: u8 = 0;
 
 /// Reference to account data or lamports with checked borrow rules.
 pub struct Ref<'a, T: ?Sized> {
-    value: &'a T,
+    value: NonNull<T>,
     state: NonNull<u8>,
     /// Indicates the type of borrow (lamports or data) by representing the
     /// shift amount.
     borrow_shift: u8,
+    marker: PhantomData<&'a T>,
+}
+
+impl<'a, T: ?Sized> Ref<'a, T> {
+    #[inline]
+    pub fn map<U: ?Sized, F>(orig: Ref<'a, T>, f: F) -> Ref<'a, U>
+    where
+        F: FnOnce(&T) -> &U,
+    {
+        let state = orig.state;
+        let borrow_shift = orig.borrow_shift;
+
+        let value = NonNull::from(f(&*orig));
+
+        // stop the decrement via Drop
+        core::mem::forget(orig);
+
+        Ref {
+            state,
+            value,
+            borrow_shift,
+            marker: PhantomData,
+        }
+    }
+
+    #[inline]
+    pub fn filter_map<U: ?Sized, F>(orig: Ref<'a, T>, f: F) -> Result<Ref<'a, U>, Self>
+    where
+        F: FnOnce(&T) -> Option<&U>,
+    {
+        let state = orig.state;
+        let borrow_shift = orig.borrow_shift;
+
+        match f(&*orig) {
+            Some(value) => {
+                // stop the decrement via Drop
+                let value = NonNull::from(value);
+                core::mem::forget(orig);
+
+                Ok(Ref {
+                    value,
+                    state,
+                    borrow_shift,
+                    marker: PhantomData,
+                })
+            }
+            None => Err(orig),
+        }
+    }
 }
 
 impl<'a, T: ?Sized> core::ops::Deref for Ref<'a, T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
-        self.value
+        unsafe { self.value.as_ref() }
     }
 }
 
@@ -402,22 +460,71 @@ const DATA_MASK: u8 = 0b_1111_0111;
 
 /// Mutable reference to account data or lamports with checked borrow rules.
 pub struct RefMut<'a, T: ?Sized> {
-    value: &'a mut T,
+    value: NonNull<T>,
     state: NonNull<u8>,
     /// Indicates the type of borrow (lamports or data) by representing the
     /// mutable borrow mask.
     borrow_mask: u8,
+    marker: PhantomData<&'a mut T>,
+}
+
+impl<'a, T: ?Sized> RefMut<'a, T> {
+    #[inline]
+    pub fn map<U: ?Sized, F>(mut orig: RefMut<'a, T>, f: F) -> RefMut<'a, U>
+    where
+        F: FnOnce(&mut T) -> &mut U,
+    {
+        let state = orig.state;
+        let borrow_mask = orig.borrow_mask;
+
+        let value = NonNull::from(f(&mut *orig));
+
+        // stop the decrement via Drop
+        core::mem::forget(orig);
+
+        RefMut {
+            value,
+            state,
+            borrow_mask,
+            marker: PhantomData,
+        }
+    }
+
+    #[inline]
+    pub fn filter_map<U: ?Sized, F>(mut orig: RefMut<'a, T>, f: F) -> Result<RefMut<'a, U>, Self>
+    where
+        F: FnOnce(&mut T) -> Option<&mut U>,
+    {
+        let state = orig.state;
+        let borrow_mask = orig.borrow_mask;
+
+        match f(&mut *orig) {
+            Some(value) => {
+                // stop the decrement via Drop
+                let value = NonNull::from(value);
+                core::mem::forget(orig);
+
+                Ok(RefMut {
+                    value,
+                    state,
+                    borrow_mask,
+                    marker: PhantomData,
+                })
+            }
+            None => Err(orig),
+        }
+    }
 }
 
 impl<'a, T: ?Sized> core::ops::Deref for RefMut<'a, T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
-        self.value
+        unsafe { self.value.as_ref() }
     }
 }
 impl<'a, T: ?Sized> core::ops::DerefMut for RefMut<'a, T> {
     fn deref_mut(&mut self) -> &mut <Self as core::ops::Deref>::Target {
-        self.value
+        unsafe { self.value.as_mut() }
     }
 }
 
