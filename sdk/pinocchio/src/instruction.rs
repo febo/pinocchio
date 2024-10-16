@@ -247,6 +247,9 @@ impl<'a, 'b, const SIZE: usize> From<&'b [Seed<'a>; SIZE]> for Signer<'a, 'b> {
 ///
 /// Creating a signer for a PDA with a single seed and bump value:
 /// ```
+/// use pinocchio::signer;
+///
+/// let pda_bump = 255;
 /// let signer = signer!(b"seed", &[pda_bump]);
 /// ```
 #[macro_export]
