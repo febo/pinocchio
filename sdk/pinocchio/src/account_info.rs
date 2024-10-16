@@ -1,6 +1,6 @@
 //! Data structures to represent account information.
 
-use core::{marker::PhantomData, ptr::NonNull, slice::from_raw_parts_mut};
+use core::{marker::PhantomData, mem::ManuallyDrop, ptr::NonNull, slice::from_raw_parts_mut};
 
 use crate::{program_error::ProgramError, pubkey::Pubkey, syscalls::sol_memset_};
 
@@ -387,6 +387,8 @@ pub struct Ref<'a, T: ?Sized> {
     /// Indicates the type of borrow (lamports or data) by representing the
     /// shift amount.
     borrow_shift: u8,
+    /// The `value` raw pointer is only valid while the `&'a T` lives so we claim
+    /// to hold a reference to it.
     marker: PhantomData<&'a T>,
 }
 
@@ -396,18 +398,13 @@ impl<'a, T: ?Sized> Ref<'a, T> {
     where
         F: FnOnce(&T) -> &U,
     {
-        let state = orig.state;
-        let borrow_shift = orig.borrow_shift;
-
-        let value = NonNull::from(f(&*orig));
-
-        // stop the decrement via Drop
-        core::mem::forget(orig);
+        // Avoid decrementing the borrow flag on Drop.
+        let orig = ManuallyDrop::new(orig);
 
         Ref {
-            state,
-            value,
-            borrow_shift,
+            value: NonNull::from(f(&*orig)),
+            state: orig.state,
+            borrow_shift: orig.borrow_shift,
             marker: PhantomData,
         }
     }
@@ -417,23 +414,17 @@ impl<'a, T: ?Sized> Ref<'a, T> {
     where
         F: FnOnce(&T) -> Option<&U>,
     {
-        let state = orig.state;
-        let borrow_shift = orig.borrow_shift;
+        // Avoid decrementing the borrow flag on Drop.
+        let orig = ManuallyDrop::new(orig);
 
         match f(&*orig) {
-            Some(value) => {
-                // stop the decrement via Drop
-                let value = NonNull::from(value);
-                core::mem::forget(orig);
-
-                Ok(Ref {
-                    value,
-                    state,
-                    borrow_shift,
-                    marker: PhantomData,
-                })
-            }
-            None => Err(orig),
+            Some(value) => Ok(Ref {
+                value: NonNull::from(value),
+                state: orig.state,
+                borrow_shift: orig.borrow_shift,
+                marker: PhantomData,
+            }),
+            None => Err(ManuallyDrop::into_inner(orig)),
         }
     }
 }
@@ -465,53 +456,47 @@ pub struct RefMut<'a, T: ?Sized> {
     /// Indicates the type of borrow (lamports or data) by representing the
     /// mutable borrow mask.
     borrow_mask: u8,
+    /// The `value` raw pointer is only valid while the `&'a T` lives so we claim
+    /// to hold a reference to it.
     marker: PhantomData<&'a mut T>,
 }
 
 impl<'a, T: ?Sized> RefMut<'a, T> {
     #[inline]
-    pub fn map<U: ?Sized, F>(mut orig: RefMut<'a, T>, f: F) -> RefMut<'a, U>
+    pub fn map<U: ?Sized, F>(orig: RefMut<'a, T>, f: F) -> RefMut<'a, U>
     where
         F: FnOnce(&mut T) -> &mut U,
     {
-        let state = orig.state;
-        let borrow_mask = orig.borrow_mask;
-
-        let value = NonNull::from(f(&mut *orig));
-
-        // stop the decrement via Drop
-        core::mem::forget(orig);
+        // Avoid decrementing the borrow flag on Drop.
+        let mut orig = ManuallyDrop::new(orig);
 
         RefMut {
-            value,
-            state,
-            borrow_mask,
+            value: NonNull::from(f(&mut *orig)),
+            state: orig.state,
+            borrow_mask: orig.borrow_mask,
             marker: PhantomData,
         }
     }
 
     #[inline]
-    pub fn filter_map<U: ?Sized, F>(mut orig: RefMut<'a, T>, f: F) -> Result<RefMut<'a, U>, Self>
+    pub fn filter_map<U: ?Sized, F>(orig: RefMut<'a, T>, f: F) -> Result<RefMut<'a, U>, Self>
     where
         F: FnOnce(&mut T) -> Option<&mut U>,
     {
-        let state = orig.state;
-        let borrow_mask = orig.borrow_mask;
+        // Avoid decrementing the mutable borrow flag on Drop.
+        let mut orig = ManuallyDrop::new(orig);
 
         match f(&mut *orig) {
             Some(value) => {
-                // stop the decrement via Drop
                 let value = NonNull::from(value);
-                core::mem::forget(orig);
-
                 Ok(RefMut {
                     value,
-                    state,
-                    borrow_mask,
+                    state: orig.state,
+                    borrow_mask: orig.borrow_mask,
                     marker: PhantomData,
                 })
             }
-            None => Err(orig),
+            None => Err(ManuallyDrop::into_inner(orig)),
         }
     }
 }
@@ -610,7 +595,7 @@ mod tests {
     #[test]
     fn test_data_ref_mut() {
         let data: [u8; 4] = [0, 1, 2, 3];
-        let state = 0 | 0b_0000_1000;
+        let state = 0b_0000_1000;
 
         let ref_data = RefMut {
             value: NonNull::from(&data),
@@ -637,7 +622,7 @@ mod tests {
     #[test]
     fn test_lamports_ref_mut() {
         let lamports: u64 = 10000;
-        let state = 0 | 0b_1000_0000;
+        let state = 0b_1000_0000;
 
         let ref_lamports = RefMut {
             value: NonNull::from(&lamports),
