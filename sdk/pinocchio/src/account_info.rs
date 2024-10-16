@@ -534,3 +534,129 @@ impl<'a, T: ?Sized> Drop for RefMut<'a, T> {
         unsafe { *self.state.as_mut() &= self.borrow_mask };
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_data_ref() {
+        let data: [u8; 4] = [0, 1, 2, 3];
+        let state = 1 << DATA_SHIFT;
+
+        let ref_data = Ref {
+            value: NonNull::from(&data),
+            borrow_shift: DATA_SHIFT,
+            state: NonNull::from(&state),
+            marker: PhantomData,
+        };
+
+        let new_ref = Ref::map(ref_data, |data| &data[1]);
+
+        assert_eq!(state, 1 << DATA_SHIFT);
+        assert_eq!(*new_ref, 1);
+
+        let Ok(new_ref) = Ref::filter_map(new_ref, |_| Some(&3)) else {
+            unreachable!()
+        };
+
+        assert_eq!(state, 1 << DATA_SHIFT);
+        assert_eq!(*new_ref, 3);
+
+        let new_ref = Ref::filter_map(new_ref, |_| Option::<&u8>::None);
+
+        assert_eq!(state, 1 << DATA_SHIFT);
+        assert!(new_ref.is_err());
+
+        drop(new_ref);
+
+        assert_eq!(state, 0 << DATA_SHIFT);
+    }
+
+    #[test]
+    fn test_lamports_ref() {
+        let lamports: u64 = 10000;
+        let state = 1 << LAMPORTS_SHIFT;
+
+        let ref_lamports = Ref {
+            value: NonNull::from(&lamports),
+            borrow_shift: LAMPORTS_SHIFT,
+            state: NonNull::from(&state),
+            marker: PhantomData,
+        };
+
+        let new_ref = Ref::map(ref_lamports, |_| &1000);
+
+        assert_eq!(state, 1 << LAMPORTS_SHIFT);
+        assert_eq!(*new_ref, 1000);
+
+        let Ok(new_ref) = Ref::filter_map(new_ref, |_| Some(&2000)) else {
+            unreachable!()
+        };
+
+        assert_eq!(state, 1 << LAMPORTS_SHIFT);
+        assert_eq!(*new_ref, 2000);
+
+        let new_ref = Ref::filter_map(new_ref, |_| Option::<&i32>::None);
+
+        assert_eq!(state, 1 << LAMPORTS_SHIFT);
+        assert!(new_ref.is_err());
+
+        drop(new_ref);
+
+        assert_eq!(state, 0 << LAMPORTS_SHIFT);
+    }
+
+    #[test]
+    fn test_data_ref_mut() {
+        let data: [u8; 4] = [0, 1, 2, 3];
+        let state = 0 | 0b_0000_1000;
+
+        let ref_data = RefMut {
+            value: NonNull::from(&data),
+            borrow_mask: DATA_MASK,
+            state: NonNull::from(&state),
+            marker: PhantomData,
+        };
+
+        let Ok(mut new_ref) = RefMut::filter_map(ref_data, |data| data.get_mut(0)) else {
+            unreachable!()
+        };
+
+        *new_ref = 4;
+
+        assert_eq!(state, 8);
+        assert_eq!(*new_ref, 4);
+
+        drop(new_ref);
+
+        assert_eq!(data, [4, 1, 2, 3]);
+        assert_eq!(state, 0);
+    }
+
+    #[test]
+    fn test_lamports_ref_mut() {
+        let lamports: u64 = 10000;
+        let state = 0 | 0b_1000_0000;
+
+        let ref_lamports = RefMut {
+            value: NonNull::from(&lamports),
+            borrow_mask: LAMPORTS_MASK,
+            state: NonNull::from(&state),
+            marker: PhantomData,
+        };
+
+        let new_ref = RefMut::map(ref_lamports, |lamports| {
+            *lamports = 200;
+            lamports
+        });
+
+        assert_eq!(state, 128);
+        assert_eq!(*new_ref, 200);
+
+        drop(new_ref);
+
+        assert_eq!(lamports, 200);
+        assert_eq!(state, 0);
+    }
+}
