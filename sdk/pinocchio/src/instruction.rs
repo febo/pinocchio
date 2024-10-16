@@ -163,7 +163,7 @@ pub struct Seed<'a> {
     pub(crate) seed: *const u8,
 
     /// Length of the seed bytes.
-    len: u64,
+    pub(crate) len: u64,
 
     /// The pointer to the seed bytes is only valid while the `&'a [u8]` lives. Instead
     /// of holding a reference to the actual `[u8]`, which would increase the size of the
@@ -238,4 +238,22 @@ impl<'a, 'b, const SIZE: usize> From<&'b [Seed<'a>; SIZE]> for Signer<'a, 'b> {
             _seeds: PhantomData::<&'b [Seed<'a>]>,
         }
     }
+}
+
+/// Convenience macro for constructing a `Signer` from a list of seeds
+/// represented as byte slices.
+///
+/// # Example
+///
+/// Creating a signer for a PDA with a single seed and bump value:
+/// ```
+/// let signer = signer!(b"seed", &[pda_bump]);
+/// ```
+#[macro_export]
+macro_rules! signer {
+    ( $($seed:expr),* ) => {
+            $crate::instruction::Signer::from(&[$(
+                $seed.into(),
+            )*])
+    };
 }
