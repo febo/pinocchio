@@ -8,5 +8,5 @@ readme = "./README.md"
 repository = "https://github.com/febo/pinocchio"
 
 [dependencies]
-pinocchio = { version="> 0.1, <= 0.4", path="../../sdk/pinocchio" }
+pinocchio = { version="> 0.1, <= 0.5", path="../../sdk/pinocchio" }
 pinocchio-pubkey = { version="0.1", path="../../sdk/pubkey" }

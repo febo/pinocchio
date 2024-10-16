@@ -19,7 +19,7 @@ checksum = "9b2a72055cd9cffc40c9f75f1e5810c80559e158796cf2202292ce4745889588"
 
 [[package]]
 name = "pinocchio"
-version = "0.4.0"
+version = "0.5.0"
 
 [[package]]
 name = "pinocchio-pubkey"
