@@ -11,7 +11,7 @@ It also defines a `decode` helper that takes a `&str` and returns the correspond
 
 ## Examples
 
-Creating a `Pubkey` constant value from a `&str`:
+Creating a `Pubkey` constant value from a static `&str`:
 ```rust
 use pinocchio::pubkey::Pubkey;
 
@@ -25,7 +25,8 @@ pinocchio_pubkey::declare_id!("Ping111111111111111111111111111111111111111");
 
 Creating a `Pubkey` from a `&str`:
 ```rust
-let owner = pinocchio_pubkey::decode("7qtAvP4CJuSKauWHtHZJt9wmQRgvcFeUcU3xKrFzxKf1");
+let address = String::from("7qtAvP4CJuSKauWHtHZJt9wmQRgvcFeUcU3xKrFzxKf1");
+let owner = pinocchio_pubkey::from_str(&address);
 ```
 
 ## License
