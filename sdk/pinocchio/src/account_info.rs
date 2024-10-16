@@ -1,6 +1,6 @@
 //! Data structures to represent account information.
 
-use core::{ptr::NonNull, slice::from_raw_parts_mut};
+use core::{marker::PhantomData, mem::ManuallyDrop, ptr::NonNull, slice::from_raw_parts_mut};
 
 use crate::{program_error::ProgramError, pubkey::Pubkey, syscalls::sol_memset_};
 
@@ -218,9 +218,10 @@ impl AccountInfo {
 
         // return the reference to lamports
         Ok(Ref {
-            value: unsafe { &(*self.raw).lamports },
+            value: unsafe { NonNull::from(&(*self.raw).lamports) },
             state: unsafe { NonNull::new_unchecked(borrow_state) },
             borrow_shift: LAMPORTS_SHIFT,
+            marker: PhantomData,
         })
     }
 
@@ -239,9 +240,10 @@ impl AccountInfo {
 
         // return the mutable reference to lamports
         Ok(RefMut {
-            value: unsafe { &mut (*self.raw).lamports },
+            value: unsafe { NonNull::from(&mut (*self.raw).lamports) },
             state: unsafe { NonNull::new_unchecked(borrow_state) },
             borrow_mask: LAMPORTS_MASK,
+            marker: PhantomData,
         })
     }
 
@@ -266,9 +268,15 @@ impl AccountInfo {
 
         // return the reference to data
         Ok(Ref {
-            value: unsafe { core::slice::from_raw_parts(self.data_ptr(), self.data_len()) },
+            value: unsafe {
+                NonNull::from(core::slice::from_raw_parts(
+                    self.data_ptr(),
+                    self.data_len(),
+                ))
+            },
             state: unsafe { NonNull::new_unchecked(borrow_state) },
             borrow_shift: DATA_SHIFT,
+            marker: PhantomData,
         })
     }
 
@@ -287,9 +295,10 @@ impl AccountInfo {
 
         // return the mutable reference to data
         Ok(RefMut {
-            value: unsafe { from_raw_parts_mut(self.data_ptr(), self.data_len()) },
+            value: unsafe { NonNull::from(from_raw_parts_mut(self.data_ptr(), self.data_len())) },
             state: unsafe { NonNull::new_unchecked(borrow_state) },
             borrow_mask: DATA_MASK,
+            marker: PhantomData,
         })
     }
 
@@ -340,7 +349,7 @@ impl AccountInfo {
             // set new length in the serialized data
             *(data_ptr.offset(-8) as *mut u64) = new_len as u64;
             // recreate the local slice with the new length
-            data.value = from_raw_parts_mut(data_ptr, new_len);
+            data.value = NonNull::from(from_raw_parts_mut(data_ptr, new_len));
         }
 
         if zero_init {
@@ -373,17 +382,57 @@ const DATA_SHIFT: u8 = 0;
 
 /// Reference to account data or lamports with checked borrow rules.
 pub struct Ref<'a, T: ?Sized> {
-    value: &'a T,
+    value: NonNull<T>,
     state: NonNull<u8>,
     /// Indicates the type of borrow (lamports or data) by representing the
     /// shift amount.
     borrow_shift: u8,
+    /// The `value` raw pointer is only valid while the `&'a T` lives so we claim
+    /// to hold a reference to it.
+    marker: PhantomData<&'a T>,
+}
+
+impl<'a, T: ?Sized> Ref<'a, T> {
+    #[inline]
+    pub fn map<U: ?Sized, F>(orig: Ref<'a, T>, f: F) -> Ref<'a, U>
+    where
+        F: FnOnce(&T) -> &U,
+    {
+        // Avoid decrementing the borrow flag on Drop.
+        let orig = ManuallyDrop::new(orig);
+
+        Ref {
+            value: NonNull::from(f(&*orig)),
+            state: orig.state,
+            borrow_shift: orig.borrow_shift,
+            marker: PhantomData,
+        }
+    }
+
+    #[inline]
+    pub fn filter_map<U: ?Sized, F>(orig: Ref<'a, T>, f: F) -> Result<Ref<'a, U>, Self>
+    where
+        F: FnOnce(&T) -> Option<&U>,
+    {
+        // Avoid decrementing the borrow flag on Drop.
+        let orig = ManuallyDrop::new(orig);
+
+        match f(&*orig) {
+            Some(value) => Ok(Ref {
+                value: NonNull::from(value),
+                state: orig.state,
+                borrow_shift: orig.borrow_shift,
+                marker: PhantomData,
+            }),
+            None => Err(ManuallyDrop::into_inner(orig)),
+        }
+    }
 }
 
 impl<'a, T: ?Sized> core::ops::Deref for Ref<'a, T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
-        self.value
+        unsafe { self.value.as_ref() }
     }
 }
 
@@ -402,22 +451,65 @@ const DATA_MASK: u8 = 0b_1111_0111;
 
 /// Mutable reference to account data or lamports with checked borrow rules.
 pub struct RefMut<'a, T: ?Sized> {
-    value: &'a mut T,
+    value: NonNull<T>,
     state: NonNull<u8>,
     /// Indicates the type of borrow (lamports or data) by representing the
     /// mutable borrow mask.
     borrow_mask: u8,
+    /// The `value` raw pointer is only valid while the `&'a T` lives so we claim
+    /// to hold a reference to it.
+    marker: PhantomData<&'a mut T>,
+}
+
+impl<'a, T: ?Sized> RefMut<'a, T> {
+    #[inline]
+    pub fn map<U: ?Sized, F>(orig: RefMut<'a, T>, f: F) -> RefMut<'a, U>
+    where
+        F: FnOnce(&mut T) -> &mut U,
+    {
+        // Avoid decrementing the borrow flag on Drop.
+        let mut orig = ManuallyDrop::new(orig);
+
+        RefMut {
+            value: NonNull::from(f(&mut *orig)),
+            state: orig.state,
+            borrow_mask: orig.borrow_mask,
+            marker: PhantomData,
+        }
+    }
+
+    #[inline]
+    pub fn filter_map<U: ?Sized, F>(orig: RefMut<'a, T>, f: F) -> Result<RefMut<'a, U>, Self>
+    where
+        F: FnOnce(&mut T) -> Option<&mut U>,
+    {
+        // Avoid decrementing the mutable borrow flag on Drop.
+        let mut orig = ManuallyDrop::new(orig);
+
+        match f(&mut *orig) {
+            Some(value) => {
+                let value = NonNull::from(value);
+                Ok(RefMut {
+                    value,
+                    state: orig.state,
+                    borrow_mask: orig.borrow_mask,
+                    marker: PhantomData,
+                })
+            }
+            None => Err(ManuallyDrop::into_inner(orig)),
+        }
+    }
 }
 
 impl<'a, T: ?Sized> core::ops::Deref for RefMut<'a, T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
-        self.value
+        unsafe { self.value.as_ref() }
     }
 }
 impl<'a, T: ?Sized> core::ops::DerefMut for RefMut<'a, T> {
     fn deref_mut(&mut self) -> &mut <Self as core::ops::Deref>::Target {
-        self.value
+        unsafe { self.value.as_mut() }
     }
 }
 
@@ -425,5 +517,131 @@ impl<'a, T: ?Sized> Drop for RefMut<'a, T> {
     // unset the mutable borrow flag
     fn drop(&mut self) {
         unsafe { *self.state.as_mut() &= self.borrow_mask };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_data_ref() {
+        let data: [u8; 4] = [0, 1, 2, 3];
+        let state = 1 << DATA_SHIFT;
+
+        let ref_data = Ref {
+            value: NonNull::from(&data),
+            borrow_shift: DATA_SHIFT,
+            state: NonNull::from(&state),
+            marker: PhantomData,
+        };
+
+        let new_ref = Ref::map(ref_data, |data| &data[1]);
+
+        assert_eq!(state, 1 << DATA_SHIFT);
+        assert_eq!(*new_ref, 1);
+
+        let Ok(new_ref) = Ref::filter_map(new_ref, |_| Some(&3)) else {
+            unreachable!()
+        };
+
+        assert_eq!(state, 1 << DATA_SHIFT);
+        assert_eq!(*new_ref, 3);
+
+        let new_ref = Ref::filter_map(new_ref, |_| Option::<&u8>::None);
+
+        assert_eq!(state, 1 << DATA_SHIFT);
+        assert!(new_ref.is_err());
+
+        drop(new_ref);
+
+        assert_eq!(state, 0 << DATA_SHIFT);
+    }
+
+    #[test]
+    fn test_lamports_ref() {
+        let lamports: u64 = 10000;
+        let state = 1 << LAMPORTS_SHIFT;
+
+        let ref_lamports = Ref {
+            value: NonNull::from(&lamports),
+            borrow_shift: LAMPORTS_SHIFT,
+            state: NonNull::from(&state),
+            marker: PhantomData,
+        };
+
+        let new_ref = Ref::map(ref_lamports, |_| &1000);
+
+        assert_eq!(state, 1 << LAMPORTS_SHIFT);
+        assert_eq!(*new_ref, 1000);
+
+        let Ok(new_ref) = Ref::filter_map(new_ref, |_| Some(&2000)) else {
+            unreachable!()
+        };
+
+        assert_eq!(state, 1 << LAMPORTS_SHIFT);
+        assert_eq!(*new_ref, 2000);
+
+        let new_ref = Ref::filter_map(new_ref, |_| Option::<&i32>::None);
+
+        assert_eq!(state, 1 << LAMPORTS_SHIFT);
+        assert!(new_ref.is_err());
+
+        drop(new_ref);
+
+        assert_eq!(state, 0 << LAMPORTS_SHIFT);
+    }
+
+    #[test]
+    fn test_data_ref_mut() {
+        let data: [u8; 4] = [0, 1, 2, 3];
+        let state = 0b_0000_1000;
+
+        let ref_data = RefMut {
+            value: NonNull::from(&data),
+            borrow_mask: DATA_MASK,
+            state: NonNull::from(&state),
+            marker: PhantomData,
+        };
+
+        let Ok(mut new_ref) = RefMut::filter_map(ref_data, |data| data.get_mut(0)) else {
+            unreachable!()
+        };
+
+        *new_ref = 4;
+
+        assert_eq!(state, 8);
+        assert_eq!(*new_ref, 4);
+
+        drop(new_ref);
+
+        assert_eq!(data, [4, 1, 2, 3]);
+        assert_eq!(state, 0);
+    }
+
+    #[test]
+    fn test_lamports_ref_mut() {
+        let lamports: u64 = 10000;
+        let state = 0b_1000_0000;
+
+        let ref_lamports = RefMut {
+            value: NonNull::from(&lamports),
+            borrow_mask: LAMPORTS_MASK,
+            state: NonNull::from(&state),
+            marker: PhantomData,
+        };
+
+        let new_ref = RefMut::map(ref_lamports, |lamports| {
+            *lamports = 200;
+            lamports
+        });
+
+        assert_eq!(state, 128);
+        assert_eq!(*new_ref, 200);
+
+        drop(new_ref);
+
+        assert_eq!(lamports, 200);
+        assert_eq!(state, 0);
     }
 }
