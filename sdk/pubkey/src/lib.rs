@@ -30,12 +30,6 @@ macro_rules! declare_id {
 }
 
 #[inline(always)]
-#[deprecated(since = "0.1.1", note = "Please use `from_str` function instead.")]
-pub const fn decode(value: &str) -> pinocchio::pubkey::Pubkey {
-    from_str(value)
-}
-
-#[inline(always)]
 pub const fn from_str(value: &str) -> pinocchio::pubkey::Pubkey {
     decode_32_const(value)
 }
