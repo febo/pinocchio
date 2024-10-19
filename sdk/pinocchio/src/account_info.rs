@@ -55,7 +55,7 @@ pub(crate) struct Account {
     /// subsequence access.
     ///
     /// The value of this field is currently only used for `realloc`.
-    original_data_len: [u8; 4],
+    original_data_len: u32,
 
     /// Public key of the account
     key: Pubkey,
@@ -70,21 +70,36 @@ pub(crate) struct Account {
     pub(crate) data_len: u64,
 }
 
-// Convenience macro to get the original data length from the account – the value will
-// be zero on first access.
-macro_rules! get_original_data_len {
-    ( $self:expr ) => {
-        unsafe { *(&(*$self).original_data_len as *const _ as *const u32) as usize }
-    };
-}
+/// Mask to indicate the original data length has been set.
+///
+/// This takes advantage of the fact that the original data length will not
+/// be greater than 10_000_000 bytes, so we can use the most significant bit
+/// as a flag to indicate that the original data length has been set and lazily
+/// initialize its value.
+const SET_LEN_MASK: u32 = 1 << 31;
 
-// Convenience macro to set the original data length in the account.
-macro_rules! set_original_data_len {
-    ( $self:expr, $len:expr ) => {
-        unsafe {
-            *(&mut (*$self).original_data_len) = u32::to_le_bytes($len as u32);
+/// Mask to retrieve the original data length.
+///
+/// This mask is used to retrieve the original data length from the `original_data_len`
+/// by clearing the flag that indicates the original data length has been set.
+const GET_LEN_MASK: u32 = !SET_LEN_MASK;
+
+/// Convenience macro to lazily initialize the original data length and set the flag
+/// if it hasn't been set yet; otherwise, return the original data length stored.
+macro_rules! original_data_len {
+    ( $account:expr, $len:expr ) => {{
+        let length = unsafe { (*$account).original_data_len };
+
+        if length & SET_LEN_MASK == SET_LEN_MASK {
+            (length & GET_LEN_MASK) as usize
+        } else {
+            // Lazily initialize the original data length and sets the flag.
+            unsafe {
+                (*$account).original_data_len = ($len as u32) | SET_LEN_MASK;
+            }
+            $len as usize
         }
-    };
+    }};
 }
 
 /// Wrapper struct for an `Account`.
@@ -329,13 +344,7 @@ impl AccountInfo {
             return Ok(());
         }
 
-        let original_len = match get_original_data_len!(self.raw) {
-            len if len > 0 => len,
-            _ => {
-                set_original_data_len!(self.raw, current_len);
-                current_len
-            }
-        };
+        let original_len = original_data_len!(self.raw, current_len);
 
         // return early if the length increase from the original serialized data
         // length is too large and would result in an out of bounds allocation
@@ -357,7 +366,7 @@ impl AccountInfo {
             if len_increase > 0 {
                 unsafe {
                     sol_memset_(
-                        &mut data[original_len..] as *mut _ as *mut u8,
+                        &mut data[current_len..] as *mut _ as *mut u8,
                         0,
                         len_increase as u64,
                     );
