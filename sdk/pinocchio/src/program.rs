@@ -4,10 +4,10 @@ use core::{mem::MaybeUninit, ops::Deref};
 
 use crate::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
     instruction::{Account, AccountMeta, Instruction, Signer},
     program_error::ProgramError,
     pubkey::Pubkey,
+    ProgramResult,
 };
 
 /// An `Instruction` as expected by `sol_invoke_signed_c`.

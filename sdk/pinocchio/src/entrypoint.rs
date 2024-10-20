@@ -5,8 +5,8 @@ use core::{alloc::Layout, mem::size_of, ptr::null_mut, slice::from_raw_parts};
 
 use crate::{
     account_info::{Account, AccountInfo, MAX_PERMITTED_DATA_INCREASE},
-    program_error::ProgramError,
     pubkey::Pubkey,
+    BPF_ALIGN_OF_U128, NON_DUP_MARKER,
 };
 
 /// Start address of the memory region used for program heap.
@@ -15,29 +15,12 @@ pub const HEAP_START_ADDRESS: u64 = 0x300000000;
 /// Length of the heap memory region used for program heap.
 pub const HEAP_LENGTH: usize = 32 * 1024;
 
-/// Maximum number of accounts that a transaction may process.
-///
-/// This value is used to set the maximum number of accounts that a program
-/// is expecting and statically initialize the array of `AccountInfo`.
-///
-/// This is based on the current [maximum number of accounts] that a transaction
-/// may lock in a block.
-///
-/// [maximum number of accounts]: https://github.com/anza-xyz/agave/blob/2e6ca8c1f62db62c1db7f19c9962d4db43d0d550/runtime/src/bank.rs#L3209-L3221
-pub const MAX_TX_ACCOUNTS: usize = 128;
-
-/// `assert_eq(core::mem::align_of::<u128>(), 8)` is true for BPF but not
-/// for some host machines.
-pub const BPF_ALIGN_OF_U128: usize = 8;
-
-/// Value used to indicate that a serialized account is not a duplicate.
-pub const NON_DUP_MARKER: u8 = u8::MAX;
-
-/// Return value for a successful program execution.
-pub const SUCCESS: u64 = 0;
-
+#[deprecated(
+    since = "0.6.0",
+    note = "Use `ProgramResult` from the crate root instead"
+)]
 /// The result of a program execution.
-pub type ProgramResult = Result<(), ProgramError>;
+pub type ProgramResult = super::ProgramResult;
 
 /// Declare the program entrypoint and set up global handlers.
 ///
@@ -126,7 +109,7 @@ macro_rules! entrypoint {
                 core::slice::from_raw_parts(accounts.as_ptr() as _, count),
                 &instruction_data,
             ) {
-                Ok(()) => $crate::entrypoint::SUCCESS,
+                Ok(()) => $crate::SUCCESS,
                 Err(error) => error.into(),
             }
         }

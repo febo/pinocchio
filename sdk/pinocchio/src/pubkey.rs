@@ -131,7 +131,7 @@ pub fn try_find_program_address(seeds: &[&[u8]], program_id: &Pubkey) -> Option<
             )
         };
         match result {
-            crate::entrypoint::SUCCESS => Some((bytes, bump_seed)),
+            crate::SUCCESS => Some((bytes, bump_seed)),
             _ => None,
         }
     }
@@ -183,7 +183,7 @@ pub fn create_program_address(
             )
         };
         match result {
-            crate::entrypoint::SUCCESS => Ok(bytes),
+            crate::SUCCESS => Ok(bytes),
             _ => Err(result.into()),
         }
     }

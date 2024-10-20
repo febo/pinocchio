@@ -36,7 +36,7 @@ macro_rules! impl_sysvar_get {
             let result = core::hint::black_box(var_addr as *const _ as u64);
 
             match result {
-                $crate::entrypoint::SUCCESS => Ok(var),
+                $crate::SUCCESS => Ok(var),
                 e => Err(e.into()),
             }
         }
