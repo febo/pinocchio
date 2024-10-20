@@ -49,12 +49,14 @@ pub(crate) struct Account {
     /// Account's original data length when it was serialized for the
     /// current program invocation.
     ///
-    /// The value of this field is lazily initialized to the current data length.
-    /// On first access, the original data length will be 0. The caller should
-    /// ensure that the original data length is set to the current data length for
-    /// subsequence access.
+    /// The value of this field is lazily initialized to the current data length
+    /// and the [`SET_LEN_MASK`] flag on first access. When reading this field,
+    /// the flag is cleared to retrieve the original data length by using the
+    /// [`GET_LEN_MASK`] mask.
     ///
-    /// The value of this field is currently only used for `realloc`.
+    /// Currently, this value is only used for `realloc` to determine if the
+    /// account data length has changed from the original serialized length beyond
+    /// the maximum permitted data increase.
     original_data_len: u32,
 
     /// Public key of the account
@@ -83,24 +85,6 @@ const SET_LEN_MASK: u32 = 1 << 31;
 /// This mask is used to retrieve the original data length from the `original_data_len`
 /// by clearing the flag that indicates the original data length has been set.
 const GET_LEN_MASK: u32 = !SET_LEN_MASK;
-
-/// Convenience macro to lazily initialize the original data length and set the flag
-/// if it hasn't been set yet; otherwise, return the original data length stored.
-macro_rules! original_data_len {
-    ( $account:expr, $len:expr ) => {{
-        let length = unsafe { (*$account).original_data_len };
-
-        if length & SET_LEN_MASK == SET_LEN_MASK {
-            (length & GET_LEN_MASK) as usize
-        } else {
-            // Lazily initialize the original data length and sets the flag.
-            unsafe {
-                (*$account).original_data_len = ($len as u32) | SET_LEN_MASK;
-            }
-            $len as usize
-        }
-    }};
-}
 
 /// Wrapper struct for an `Account`.
 ///
@@ -344,7 +328,19 @@ impl AccountInfo {
             return Ok(());
         }
 
-        let original_len = original_data_len!(self.raw, current_len);
+        let original_len = {
+            let length = unsafe { (*self.raw).original_data_len };
+
+            if length & SET_LEN_MASK == SET_LEN_MASK {
+                (length & GET_LEN_MASK) as usize
+            } else {
+                // lazily initialize the original data length and sets the flag
+                unsafe {
+                    (*self.raw).original_data_len = (current_len as u32) | SET_LEN_MASK;
+                }
+                current_len
+            }
+        };
 
         // return early if the length increase from the original serialized data
         // length is too large and would result in an out of bounds allocation
