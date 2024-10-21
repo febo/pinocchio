@@ -2,6 +2,8 @@
 resolver = "2"
 members = [
     "programs/system",
+    "programs/token",
+    "programs/associated-token",
     "sdk/pinocchio",
     "sdk/pubkey",
 ]
