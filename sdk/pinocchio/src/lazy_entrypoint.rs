@@ -77,10 +77,10 @@ pub struct InstructionContext {
     /// Pointer to the runtime input buffer for the instruction.
     input: *mut u8,
 
-    /// Number of available accounts.
+    /// Number of remaining accounts.
     ///
     /// This value is decremented each time [`next_account`] is called.
-    available: u64,
+    remaining: u64,
 
     /// Current memory offset on the input buffer.
     offset: usize,
@@ -88,12 +88,11 @@ pub struct InstructionContext {
 
 impl InstructionContext {
     /// Creates a new [`InstructionContext`] for the input buffer.
+    #[inline(always)]
     pub fn new(input: *mut u8) -> Self {
-        let available = unsafe { *(input as *const u64) };
-
         Self {
             input,
-            available,
+            remaining: unsafe { *(input as *const u64) },
             offset: core::mem::size_of::<u64>(),
         }
     }
@@ -103,10 +102,15 @@ impl InstructionContext {
     /// The account is represented as a [`MaybeAccount`], since it can either
     /// represent and [`AccountInfo`] or the index of a duplicated account. It is up to the
     /// caller to handle the mapping back to the source account.
+    ///
+    /// # Error
+    ///
+    /// Returns a [`ProgramError::NotEnoughAccountKeys`] error if there are
+    /// no remaining accounts.
     #[inline(always)]
     pub fn next_account(&mut self) -> Result<MaybeAccount, ProgramError> {
-        self.available = self
-            .available
+        self.remaining = self
+            .remaining
             .checked_sub(1)
             .ok_or(ProgramError::NotEnoughAccountKeys)?;
 
@@ -115,24 +119,75 @@ impl InstructionContext {
 
     /// Returns the next account for the instruction.
     ///
-    /// Note that this method does *not* decrement the number of available accounts.
+    /// Note that this method does *not* decrement the number of remaining accounts, but moves
+    /// the offset forward. It is intended for use when the caller is certain on the number of
+    /// remaining accounts.
     ///
     /// # Safety
     ///
-    /// It is up to the caller to guarantee that there is an account available; calling this when
-    /// there are no more available accounts results in undefined behavior. Additionally, when the
-    /// next account is duplicated will result in a panic.
+    /// It is up to the caller to guarantee that there are remaining accounts; calling this when
+    /// there are no more remaining accounts results in undefined behavior.
     #[inline(always)]
-    pub unsafe fn next_account_unchecked(&mut self) -> AccountInfo {
-        read_account(self.input, &mut self.offset).assume_account()
+    pub unsafe fn next_account_unchecked(&mut self) -> MaybeAccount {
+        read_account(self.input, &mut self.offset)
+    }
+
+    /// Returns an account of the instruction given its index.
+    ///
+    /// This method operates independently to [`next_account`] and can be used at any point,
+    /// although it is recommended to use [`next_account`] when accessing the accounts
+    /// sequentially.
+    #[inline(always)]
+    pub fn get_account(&self, index: u8) -> Result<MaybeAccount, ProgramError> {
+        if index as u64 >= self.available() {
+            return Err(ProgramError::NotEnoughAccountKeys);
+        }
+
+        Ok(unsafe { self.get_account_unchecked(index) })
+    }
+
+    /// Returns an account of the instruction given its index without validating whether
+    /// the index is within the available accounts.
+    ///
+    /// # Safety
+    ///
+    /// It is up to the caller to guarantee that here is an account available at the
+    /// given index; calling this with an invalid index results in undefined behavior.
+    #[inline(always)]
+    pub unsafe fn get_account_unchecked(&self, mut index: u8) -> MaybeAccount {
+        let mut offset = core::mem::size_of::<u64>();
+
+        while index > 0 {
+            let account: *mut Account = self.input.add(offset) as *mut _;
+
+            if (*account).borrow_state == NON_DUP_MARKER {
+                offset += core::mem::size_of::<Account>();
+                offset += (*account).data_len as usize;
+                offset += MAX_PERMITTED_DATA_INCREASE;
+                offset += (offset as *const u8).align_offset(BPF_ALIGN_OF_U128);
+                offset += core::mem::size_of::<u64>();
+            } else {
+                offset += core::mem::size_of::<u64>();
+            }
+
+            index -= 1;
+        }
+
+        read_account(self.input, &mut offset)
     }
 
     /// Returns the number of available accounts.
+    #[inline(always)]
+    pub fn available(&self) -> u64 {
+        unsafe { *(self.input as *const u64) }
+    }
+
+    /// Returns the number of remaining accounts.
     ///
     /// This value is decremented each time [`next_account`] is called.
     #[inline(always)]
-    pub fn available(&self) -> u64 {
-        self.available
+    pub fn remaining(&self) -> u64 {
+        self.remaining
     }
 
     /// Returns the instruction data for the instruction.
@@ -141,7 +196,7 @@ impl InstructionContext {
     /// return a [`ProgramError::InvalidInstructionData`] error.
     #[inline(always)]
     pub fn instruction_data(&mut self) -> Result<(&[u8], &Pubkey), ProgramError> {
-        if self.available > 0 {
+        if self.remaining > 0 {
             return Err(ProgramError::InvalidInstructionData);
         }
 
