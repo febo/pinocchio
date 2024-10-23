@@ -83,10 +83,10 @@ pub fn sol_log_slice(slice: &[u8]) {
     }
 }
 
-/// Print the hexadecimal representation of the program's input parameters.
-///
-/// - `accounts` - A slice of [`AccountInfo`].
-/// - `data` - The instruction data.
+// Print the hexadecimal representation of the program's input parameters.
+//
+// - `accounts` - A slice of [`AccountInfo`].
+// - `data` - The instruction data.
 // TODO: This function is not yet implemented.
 /*
 pub fn sol_log_params(accounts: &[AccountInfo], data: &[u8]) {
@@ -116,6 +116,4 @@ pub fn sol_log_compute_units() {
     unsafe {
         crate::syscalls::sol_log_compute_units_();
     }
-    #[cfg(not(target_os = "solana"))]
-    core::hint::black_box(());
 }
