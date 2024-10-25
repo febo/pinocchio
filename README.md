@@ -60,7 +60,7 @@ The `lazy_entrypoint` is suitable for program that have a single or very few ins
 
 ### 🚪 `entrypoint!`
 
-To use the `entrypoint`, use the following in your entrypoint definition:
+To use the `entrypoint!` macro, use the following in your entrypoint definition:
 ```rust
 use pinocchio::{
   account_info::AccountInfo,
@@ -90,7 +90,7 @@ The information from the input is parsed into their own entities:
 
 ### 🚪 `lazy_entrypoint!`
 
-To use the `lazy_entrypoint`, use the following in your entrypoint definition:
+To use the `lazy_entrypoint!` macro, use the following in your entrypoint definition:
 ```rust
 use pinocchio::{
   lazy_entrypoint,
