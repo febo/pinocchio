@@ -49,7 +49,6 @@ use crate::{
 ///         mut context: InstructionContext,
 ///     ) -> ProgramResult {
 ///         msg!("Hello from my lazy program!");
-///
 ///         Ok(())
 ///     }
 ///

@@ -34,7 +34,7 @@ The library defines:
 * core data types
 * logging macros
 * `syscall` functions
-* access to system accounts (`sysvar`)
+* access to system accounts (`sysvars`)
 * cross-program invocation
 
 ## Features
@@ -58,9 +58,9 @@ The `lazy_entrypoint` is suitable for program that have a single or very few ins
 > ⚠️ **Note:**
 > In both cases you should use the types from the `pinocchio` crate instead of `solana-program`. If you need to invoke a different program, you will need to redefine its instruction builder to create an equivalent instruction data using `pinocchio` types.
 
-### `entrypoint!`
+### 🚪 `entrypoint!`
 
-On your entrypoint definition:
+To use the `entrypoint`, use the following in your entrypoint definition:
 ```rust
 use pinocchio::{
   account_info::AccountInfo,
@@ -82,9 +82,15 @@ pub fn process_instruction(
 }
 ```
 
-### `lazy_entrypoint!`
+The information from the input is parsed into their own entities:
 
-On your entrypoint definition:
+* `program_id`: the `ID` of the program being called
+* `accounts`: the accounts received
+* `instruction_data`: data for the instruction
+
+### 🚪 `lazy_entrypoint!`
+
+To use the `lazy_entrypoint`, use the following in your entrypoint definition:
 ```rust
 use pinocchio::{
   lazy_entrypoint,
@@ -102,6 +108,12 @@ pub fn process_instruction(
   Ok(())
 }
 ```
+
+The `InstructionContext` provides on-demand access to the information of the input:
+
+* `available()`: number of available accounts
+* `next_account()`: parsers the next available account (can be used as many times as accounts available)
+* `instruction_data()`: parsers the intruction data and program id
 
 ## License
 

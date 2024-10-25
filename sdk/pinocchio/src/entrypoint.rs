@@ -64,9 +64,9 @@ pub type ProgramResult = super::ProgramResult;
 ///     use pinocchio::{
 ///         account_info::AccountInfo,
 ///         entrypoint,
-///         entrypoint::ProgramResult,
 ///         msg,
-///         pubkey::Pubkey
+///         pubkey::Pubkey,
+///         ProgramResult
 ///     };
 ///
 ///     entrypoint!(process_instruction);
@@ -77,7 +77,6 @@ pub type ProgramResult = super::ProgramResult;
 ///         instruction_data: &[u8],
 ///     ) -> ProgramResult {
 ///         msg!("Hello from my program!");
-///
 ///         Ok(())
 ///     }
 ///
