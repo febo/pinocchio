@@ -172,7 +172,9 @@ impl InstructionContext {
             index -= 1;
         }
 
-        read_account(self.input, &mut offset)
+        MaybeAccount::Account(AccountInfo {
+            raw: self.input.add(offset) as *mut _,
+        })
     }
 
     /// Returns the number of available accounts.
