@@ -22,6 +22,10 @@ pub const HEAP_LENGTH: usize = 32 * 1024;
 /// The result of a program execution.
 pub type ProgramResult = super::ProgramResult;
 
+#[deprecated(since = "0.6.0", note = "Use `SUCCESS` from the crate root instead")]
+/// Return value for a successful program execution.
+pub const SUCCESS: u64 = super::SUCCESS;
+
 /// Declare the program entrypoint and set up global handlers.
 ///
 /// The main difference from the standard `entrypoint!` macro is that this macro represents an
