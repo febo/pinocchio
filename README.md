@@ -34,7 +34,7 @@ The library defines:
 * core data types
 * logging macros
 * `syscall` functions
-* access to system accounts (`sysvar`)
+* access to system accounts (`sysvars`)
 * cross-program invocation
 
 ## Features
@@ -51,13 +51,22 @@ From your project folder:
 cargo add pinocchio
 ```
 
-On your entrypoint definition:
+Pinocchio provides two different entrypoint macros: an `entrypoint` that looks similar to the "standard" one found in `solana-program` and a lightweight `lazy_entrypoint`. The main difference between them is how much work the entrypoint performs. While the `entrypoint` parsers the whole input and provide the `program_id`, `accounts` and `instruction_data` separately, the `lazy_entrypoint` only wraps the input at first. It then provides methods to parse the input on demand. The benefit in this case is that you have more control when the parsing is happening &mdash; even whether the parsing is needed or not.
+
+The `lazy_entrypoint` is suitable for programs that have a single or very few instructions, since it requires the program to handle the parsing, which can become complex as the number of instructions increases. For "larger" programs, the `entrypoint` will likely be easier and more efficient to use.
+
+> ⚠️ **Note:**
+> In both cases you should use the types from the `pinocchio` crate instead of `solana-program`. If you need to invoke a different program, you will need to redefine its instruction builder to create an equivalent instruction data using `pinocchio` types.
+
+### 🚪 `entrypoint!`
+
+To use the `entrypoint!` macro, use the following in your entrypoint definition:
 ```rust
 use pinocchio::{
   account_info::AccountInfo,
   entrypoint,
-  entrypoint::ProgramResult,
   msg,
+  ProgramResult
   pubkey::Pubkey
 };
 
@@ -73,8 +82,38 @@ pub fn process_instruction(
 }
 ```
 
-> ⚠️ **Note:**
-> You should use the types from the `pinocchio` crate instead of `solana-program`. If you need to invoke a different program, you will need to redefine its instruction builder to create an equivalent instruction data using `pinocchio` types.
+The information from the input is parsed into their own entities:
+
+* `program_id`: the `ID` of the program being called
+* `accounts`: the accounts received
+* `instruction_data`: data for the instruction
+
+### 🚪 `lazy_entrypoint!`
+
+To use the `lazy_entrypoint!` macro, use the following in your entrypoint definition:
+```rust
+use pinocchio::{
+  lazy_entrypoint,
+  lazy_entrypoint::InstructionContext,
+  msg,
+  ProgramResult
+};
+
+lazy_entrypoint!(process_instruction);
+
+pub fn process_instruction(
+  mut context: InstructionContext,
+) -> ProgramResult {
+  msg!("Hello from my lazy program!");
+  Ok(())
+}
+```
+
+The `InstructionContext` provides on-demand access to the information of the input:
+
+* `available()`: number of available accounts
+* `next_account()`: parsers the next available account (can be used as many times as accounts available)
+* `instruction_data()`: parsers the intruction data and program id
 
 ## License
 
