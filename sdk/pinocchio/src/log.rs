@@ -33,6 +33,8 @@
 //! [`Pubkey`]: crate::pubkey::Pubkey
 //! [`Pubkey::log`]: crate::pubkey::Pubkey::log
 
+use crate::{account_info::AccountInfo, pubkey::log};
+
 #[macro_export]
 macro_rules! msg {
     ($msg:expr) => {
@@ -83,12 +85,10 @@ pub fn sol_log_slice(slice: &[u8]) {
     }
 }
 
-// Print the hexadecimal representation of the program's input parameters.
-//
-// - `accounts` - A slice of [`AccountInfo`].
-// - `data` - The instruction data.
-// TODO: This function is not yet implemented.
-/*
+/// Print the hexadecimal representation of the program's input parameters.
+///
+/// - `accounts` - A slice of [`AccountInfo`].
+/// - `data` - The instruction data.
 pub fn sol_log_params(accounts: &[AccountInfo], data: &[u8]) {
     for (i, account) in accounts.iter().enumerate() {
         msg!("AccountInfo");
@@ -96,18 +96,17 @@ pub fn sol_log_params(accounts: &[AccountInfo], data: &[u8]) {
         msg!("- Is signer");
         sol_log_64(0, 0, 0, 0, account.is_signer() as u64);
         msg!("- Key");
-        account.key().log();
+        log(account.key());
         msg!("- Lamports");
         sol_log_64(0, 0, 0, 0, account.lamports());
         msg!("- Account data length");
         sol_log_64(0, 0, 0, 0, account.data_len() as u64);
         msg!("- Owner");
-        account.owner().log();
+        log(account.owner());
     }
     msg!("Instruction data");
     sol_log_slice(data);
 }
-*/
 
 /// Print the remaining compute units available to the program.
 #[inline]

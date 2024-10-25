@@ -121,6 +121,7 @@ pub struct AccountMeta<'a> {
 }
 
 impl<'a> AccountMeta<'a> {
+    #[inline(always)]
     pub fn new(pubkey: &'a Pubkey, is_writable: bool, is_signer: bool) -> Self {
         Self {
             pubkey,

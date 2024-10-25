@@ -14,6 +14,9 @@ use crate::{
 /// managing potential duplicated accounts and set up a `global allocator`
 /// and `panic handler`.
 ///
+/// The usual use-case for a `lazy_entrypoint` is small programs with a single instruction.
+/// For most use-cases, it is recommended to use the [`entrypoint`] macro instead.
+///
 /// This macro emits the boilerplate necessary to begin program execution, calling a
 /// provided function to process the program instruction supplied by the runtime, and reporting
 /// its result to the runtime.
