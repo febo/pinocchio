@@ -139,6 +139,12 @@ impl AccountInfo {
         unsafe { (*self.raw).data_len as usize }
     }
 
+    /// Returns the lamports in the account.
+    #[inline(always)]
+    pub fn lamports(&self) -> u64 {
+        unsafe { (*self.raw).lamports }
+    }
+
     /// Indicates whether the account data is empty.
     ///
     /// An account is considered empty if the data length is zero.
