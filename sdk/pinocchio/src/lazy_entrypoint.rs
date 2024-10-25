@@ -166,14 +166,12 @@ impl InstructionContext {
     /// before reading all accounts will result in undefined behavior.
     #[inline(always)]
     pub unsafe fn instruction_data_unchecked(&mut self) -> (&[u8], &Pubkey) {
-        let data_len = unsafe { *(self.input.add(self.offset) as *const usize) };
+        let data_len = *(self.input.add(self.offset) as *const usize);
         // shadowing the offset to avoid leaving it in an inconsistent state
         let offset = self.offset + core::mem::size_of::<u64>();
-        let data = unsafe { core::slice::from_raw_parts(self.input.add(offset), data_len) };
+        let data = core::slice::from_raw_parts(self.input.add(offset), data_len);
 
-        (data, unsafe {
-            &*(self.input.add(offset + data_len) as *const Pubkey)
-        })
+        (data, &*(self.input.add(offset + data_len) as *const Pubkey))
     }
 }
 
