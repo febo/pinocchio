@@ -53,7 +53,7 @@ cargo add pinocchio
 
 Pinocchio provides two different entrypoint macros: an `entrypoint` that looks similar to the "standard" one found in `solana-program` and a lightweight `lazy_entrypoint`. The main difference between them is how much work the entrypoint performs. While the `entrypoint` parsers the whole input and provide the `program_id`, `accounts` and `instruction_data` separately, the `lazy_entrypoint` only wraps the input at first. It then provides methods to parse the input on demand. The benefit in this case is that you have more control when the parsing is happening &mdash; even whether the parsing is needed or not.
 
-The `lazy_entrypoint` is suitable for program that have a single or very few instructions, since it requires the program to handle the parsing, which can become complex as the number of instructions increases. For "larger" programs, the `entrypoint` will likely be easier and more efficient to use.
+The `lazy_entrypoint` is suitable for programs that have a single or very few instructions, since it requires the program to handle the parsing, which can become complex as the number of instructions increases. For "larger" programs, the `entrypoint` will likely be easier and more efficient to use.
 
 > ⚠️ **Note:**
 > In both cases you should use the types from the `pinocchio` crate instead of `solana-program`. If you need to invoke a different program, you will need to redefine its instruction builder to create an equivalent instruction data using `pinocchio` types.
