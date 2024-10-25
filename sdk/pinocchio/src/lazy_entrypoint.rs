@@ -131,52 +131,6 @@ impl InstructionContext {
         read_account(self.input, &mut self.offset)
     }
 
-    /// Returns an account of the instruction given its index.
-    ///
-    /// This method operates independently to [`next_account`] and can be used at any point,
-    /// although it is recommended to use [`next_account`] when accessing the accounts
-    /// sequentially.
-    #[inline(always)]
-    pub fn get_account(&self, index: u8) -> Result<MaybeAccount, ProgramError> {
-        if index as u64 >= self.available() {
-            return Err(ProgramError::NotEnoughAccountKeys);
-        }
-
-        Ok(unsafe { self.get_account_unchecked(index) })
-    }
-
-    /// Returns an account of the instruction given its index without validating whether
-    /// the index is within the available accounts.
-    ///
-    /// # Safety
-    ///
-    /// It is up to the caller to guarantee that here is an account available at the
-    /// given index; calling this with an invalid index results in undefined behavior.
-    #[inline(always)]
-    pub unsafe fn get_account_unchecked(&self, mut index: u8) -> MaybeAccount {
-        let mut offset = core::mem::size_of::<u64>();
-
-        while index > 0 {
-            let account: *mut Account = self.input.add(offset) as *mut _;
-
-            if (*account).borrow_state == NON_DUP_MARKER {
-                offset += core::mem::size_of::<Account>();
-                offset += (*account).data_len as usize;
-                offset += MAX_PERMITTED_DATA_INCREASE;
-                offset += (offset as *const u8).align_offset(BPF_ALIGN_OF_U128);
-                offset += core::mem::size_of::<u64>();
-            } else {
-                offset += core::mem::size_of::<u64>();
-            }
-
-            index -= 1;
-        }
-
-        MaybeAccount::Account(AccountInfo {
-            raw: self.input.add(offset) as *mut _,
-        })
-    }
-
     /// Returns the number of available accounts.
     #[inline(always)]
     pub fn available(&self) -> u64 {
