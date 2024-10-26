@@ -89,9 +89,7 @@ pub const SUCCESS: u64 = super::SUCCESS;
 #[macro_export]
 macro_rules! entrypoint {
     ( $process_instruction:ident ) => {
-        entrypoint!($process_instruction, {
-            $crate::entrypoint::MAX_TX_ACCOUNTS
-        });
+        entrypoint!($process_instruction, { $crate::MAX_TX_ACCOUNTS });
     };
     ( $process_instruction:ident, $maximum:expr ) => {
         /// Program entrypoint.
@@ -143,9 +141,11 @@ pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
         let processed = core::cmp::min(total_accounts, MAX_ACCOUNTS);
 
         for i in 0..processed {
-            let duplicate = *(input.add(offset) as *const u8);
-            if duplicate == NON_DUP_MARKER {
-                let account_info: *mut Account = input.add(offset) as *mut _;
+            let account_info: *mut Account = input.add(offset) as *mut _;
+
+            if (*account_info).borrow_state == NON_DUP_MARKER {
+                // repurpose the borrow state to track borrows
+                (*account_info).borrow_state = 0b_0000_0000;
 
                 offset += core::mem::size_of::<Account>();
                 offset += (*account_info).data_len as usize;
@@ -153,13 +153,15 @@ pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
                 offset += (offset as *const u8).align_offset(BPF_ALIGN_OF_U128);
                 offset += core::mem::size_of::<u64>();
 
-                (*account_info).borrow_state = 0b_0000_0000;
-
                 accounts[i].write(AccountInfo { raw: account_info });
             } else {
                 offset += core::mem::size_of::<u64>();
                 // duplicate account, clone the original pointer
-                accounts[i].write(accounts[duplicate as usize].assume_init_ref().clone());
+                accounts[i].write(
+                    accounts[(*account_info).borrow_state as usize]
+                        .assume_init_ref()
+                        .clone(),
+                );
             }
         }
 
@@ -167,10 +169,9 @@ pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
         // data (there is a duplication of logic but we avoid testing whether we
         // have space for the account or not)
         for _ in processed..total_accounts {
-            let duplicate_info = *(input.add(offset) as *const u8);
+            let account_info: *mut Account = input.add(offset) as *mut _;
 
-            if duplicate_info == NON_DUP_MARKER {
-                let account_info: *mut Account = input.add(offset) as *mut _;
+            if (*account_info).borrow_state == NON_DUP_MARKER {
                 offset += core::mem::size_of::<Account>();
                 offset += (*account_info).data_len as usize;
                 offset += MAX_PERMITTED_DATA_INCREASE;
