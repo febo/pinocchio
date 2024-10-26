@@ -1,8 +1,8 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
     instruction::{AccountMeta, Instruction, Signer},
     program::invoke_signed,
+    ProgramResult,
 };
 
 /// Transfer lamports.

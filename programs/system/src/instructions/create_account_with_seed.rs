@@ -1,9 +1,9 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
     instruction::{AccountMeta, Instruction, Signer},
     program::invoke_signed,
     pubkey::Pubkey,
+    ProgramResult,
 };
 
 /// Create a new account at an address derived from a base pubkey and a seed.
@@ -12,8 +12,7 @@ use pinocchio::{
 ///   0. `[WRITE, SIGNER]` Funding account
 ///   1. `[WRITE]` Created account
 ///   2. `[SIGNER]` (optional) Base account; the account matching the base Pubkey below must be
-///                          provided as a signer, but may be the same as the funding account
-///             
+///                 provided as a signer, but may be the same as the funding account
 pub struct CreateAccountWithSeed<'a, 'b, 'c> {
     /// Funding account.
     pub from: &'a AccountInfo,
