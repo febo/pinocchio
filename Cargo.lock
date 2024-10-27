@@ -22,6 +22,14 @@ name = "pinocchio"
 version = "0.6.0"
 
 [[package]]
+name = "pinocchio-associated-token"
+version = "0.1.0"
+dependencies = [
+ "pinocchio",
+ "pinocchio-pubkey",
+]
+
+[[package]]
 name = "pinocchio-pubkey"
 version = "0.2.1"
 dependencies = [
@@ -32,6 +40,14 @@ dependencies = [
 [[package]]
 name = "pinocchio-system"
 version = "0.2.0"
+dependencies = [
+ "pinocchio",
+ "pinocchio-pubkey",
+]
+
+[[package]]
+name = "pinocchio-token"
+version = "0.1.0"
 dependencies = [
  "pinocchio",
  "pinocchio-pubkey",
