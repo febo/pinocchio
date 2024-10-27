@@ -9,7 +9,7 @@ use pinocchio::{
 /// ### Accounts:
 ///   0. `[WRITE]`  The account to initialize.
 ///   1. `[]` The mint this account will be associated with.
-pub struct InitilizeAccount2<'a> {
+pub struct InitilizeAccount3<'a> {
     /// New Account.
     pub token: &'a AccountInfo,
 
@@ -20,7 +20,7 @@ pub struct InitilizeAccount2<'a> {
     pub owner: Pubkey
 }
 
-impl<'a> InitilizeAccount2<'a> {
+impl<'a> InitilizeAccount3<'a> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
