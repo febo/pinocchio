@@ -14,11 +14,22 @@ impl Mint {
         unsafe { Self(account_info.borrow_data_unchecked().as_ptr()) }
     }
 
+    #[inline(always)]
     pub fn has_mint_authority(&self) -> bool {
         unsafe { *(self.0 as *const bool) }
     }
 
-    pub fn mint_authority(&self) -> Pubkey {
+    pub fn mint_authority(&self) -> Option<Pubkey> {
+        if self.has_mint_authority() {
+            Some(self.mint_authority_unchecked())
+        } else {
+            None
+        }
+    }
+
+    /// Use this when you know the account will have a mint authority and you want to skip the Option check.
+    #[inline(always)]
+    pub fn mint_authority_unchecked(&self) -> Pubkey {
         unsafe { *(self.0.add(4) as *const Pubkey) }
     }
 
@@ -34,11 +45,22 @@ impl Mint {
         unsafe { *(self.0.add(45) as *const bool) }
     }
 
+    #[inline(always)]
     pub fn has_freeze_authority(&self) -> bool {
         unsafe { *(self.0.add(46) as *const bool) }
     }
 
-    pub fn freeze_authority(&self) -> Pubkey {
+    pub fn freeze_authority(&self) -> Option<Pubkey> {
+        if self.has_freeze_authority() {
+            Some(self.freeze_authority_unchecked())
+        } else {
+            None
+        }
+    }
+
+    /// Use this when you know the account will have a freeze authority and you want to skip the Option check.
+    #[inline(always)]
+    pub fn freeze_authority_unchecked(&self) -> Pubkey {
         unsafe { *(self.0.add(50) as *const Pubkey) }
     }
 }
