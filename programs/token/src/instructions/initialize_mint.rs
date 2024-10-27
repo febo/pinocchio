@@ -19,7 +19,7 @@ pub struct InitilizeMint2<'a> {
     pub mint_authority: Pubkey,
 
     /// Freeze Authority.
-    pub freeze_authority: COption<Pubkey>
+    pub freeze_authority: Option<Pubkey>
 
 
 }
@@ -53,7 +53,12 @@ impl<'a> InitilizeMint2<'a> {
 
             *(ptr.add(5) as *mut Pubkey) = self.mint_authority;
 
-            *(ptr.add(37) as *mut  COption<Pubkey>) = self.freeze_authority;
+            if self.freeze_authority.is_some() {
+                *(ptr.add(37) as *mut  u32) = 1;
+                *(ptr.add(41) as *mut Pubkey) = self.freeze_authority.unwrap_unchecked();
+            } else { 
+                *(ptr.add(37) as *mut [u8; 36]) = [0;36];
+            };
         }
 
         let instruction = Instruction {

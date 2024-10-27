@@ -20,9 +20,7 @@ use pinocchio::{
     authority_type: AuthorityType,
 
     /// The new authority
-    new_authority: COption<Pubkey>,
-
-
+    new_authority: Option<Pubkey>,
 }
 
 impl<'a> SetAuthority<'a> {
@@ -52,7 +50,12 @@ impl<'a> SetAuthority<'a> {
 
             *(ptr.add(4) as *mut AuthorityType) = self.authority_type;
 
-            *(ptr.add(5) as *mut COption<Pubkey>) = self.new_authority;
+            if self.new_authority.is_some() {
+                *(ptr.add(5) as *mut  u32) = 1;
+                *(ptr.add(9) as *mut Pubkey) = self.new_authority.unwrap_unchecked();
+            } else { 
+                *(ptr.add(5) as *mut [u8; 36]) = [0;36];
+            }
         }
 
         let instruction = Instruction {
