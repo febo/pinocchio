@@ -1,7 +1,10 @@
 use core::mem::MaybeUninit;
 
 use pinocchio::{
-    account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, ProgramResult
+    account_info::AccountInfo,
+    instruction::{AccountMeta, Instruction, Signer},
+    program::invoke_signed,
+    ProgramResult,
 };
 
 /// Approves a delegate.
@@ -14,21 +17,16 @@ use pinocchio::{
 pub struct ApproveChecked<'a> {
     /// Source Account.
     pub token: &'a AccountInfo,
-
     /// Mint Account.
     pub mint: &'a AccountInfo,
-
-    /// Delegate Account
+    /// Delegate Account.
     pub delegate: &'a AccountInfo,
-
-    /// Source Owner Account
+    /// Source Owner Account.
     pub authority: &'a AccountInfo,
-
-    /// Amount
+    /// Amount.
     pub amount: u64,
-
-    /// Decimals
-    pub decimals: u8
+    /// Decimals.
+    pub decimals: u8,
 }
 
 impl<'a> ApproveChecked<'a> {
@@ -38,7 +36,7 @@ impl<'a> ApproveChecked<'a> {
     }
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
-        // account metadata
+        // Account metadata
         let account_metas: [AccountMeta; 4] = [
             AccountMeta::writable(self.token.key()),
             AccountMeta::readonly(self.mint.key()),
@@ -46,22 +44,21 @@ impl<'a> ApproveChecked<'a> {
             AccountMeta::readonly_signer(self.authority.key()),
         ];
 
-        // instruction data
-        // -  [0..4]: instruction discriminator
-        // -  [4..12]: amount
-        // -  [12]: decimals
+        // Instruction data
+        // -  [0]  : instruction discriminator (1 byte, u8)
+        // -  [1..9]: amount (8 bytes, u64)
+        // -  [9]   : decimals (1 byte, u8)
+        let mut instruction_data = MaybeUninit::<[u8; 10]>::uninit();
 
-        let mut instruction_data = MaybeUninit::<[u8; 12]>::uninit();
-
-        // data
+        // Data population
         unsafe {
             let ptr = instruction_data.as_mut_ptr() as *mut u8;
-
-            *(ptr as *mut u32) = 13;
-
-            *(ptr.add(4) as *mut u64) = self.amount;
-
-            *ptr.add(12) = self.decimals;
+            // Set discriminator as u8 at offset [0]
+            *ptr = 13;
+            // Set amount as u64 at offset [1..9]
+            *(ptr.add(1) as *mut u64) = self.amount;
+            // Set decimals as u8 at offset [9]
+            *ptr.add(9) = self.decimals;
         }
 
         let instruction = Instruction {
@@ -71,8 +68,9 @@ impl<'a> ApproveChecked<'a> {
         };
 
         invoke_signed(
-            &instruction, 
-            &[self.token, self.delegate, self.authority], 
-            signers)
+            &instruction,
+            &[self.token, self.mint, self.delegate, self.authority],
+            signers,
+        )
     }
 }

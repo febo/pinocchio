@@ -11,10 +11,8 @@ use pinocchio::{
 pub struct CloseAccount<'a> {
     /// Token Account.
     pub token: &'a AccountInfo,
-
     /// Destination Account
     pub destination: &'a AccountInfo,
-
     /// Owner Account
     pub authority: &'a AccountInfo,
 }
@@ -42,6 +40,7 @@ impl<'a> CloseAccount<'a> {
         invoke_signed(
             &instruction, 
             &[self.token, self.destination, self.authority], 
-            signers)
+            signers
+        )
     }
 }

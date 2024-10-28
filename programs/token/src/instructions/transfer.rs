@@ -16,13 +16,10 @@ use pinocchio::{
 pub struct Transfer<'a> {
     /// Sender account.
     pub from: &'a AccountInfo,
-
     /// Recipient account.
     pub to: &'a AccountInfo,
-
     /// Authority account.
     pub authority: &'a AccountInfo,
-
     /// Amount of microtokens to transfer.
     pub amount: u64,
 }
@@ -41,20 +38,18 @@ impl<'a> Transfer<'a> {
             AccountMeta::readonly_signer(self.authority.key()),
         ];
 
-        // instruction data
-        // -  [0..4]: instruction discriminator
-        // -  [4..12]: amount
-        let mut instruction_data = MaybeUninit::<[u8; 12]>::uninit();
+        // Instruction data layout:
+        // -  [0]: instruction discriminator 
+        // -  [1..9]: amount 
+        let mut instruction_data = MaybeUninit::<[u8; 9]>::uninit();
 
+        // Populate data
         unsafe {
-            // Get a mutable pointer to the instruction_data
             let ptr = instruction_data.as_mut_ptr() as *mut u8;
-
-            // Write 3 as u32 to the first 4 bytes
-            *(ptr as *mut u32) = 3;
-
-            // Write self.amount as u64 to the next 8 bytes
-            *(ptr.add(4) as *mut u64) = self.amount;
+            // Set discriminator as u8 at offset [0]
+            *ptr = 3;
+            // Set amount as u64 at offset [1]
+            *(ptr.add(1) as *mut u64) = self.amount;
         }
 
         let instruction = Instruction {
@@ -63,6 +58,10 @@ impl<'a> Transfer<'a> {
             data: unsafe { &instruction_data.assume_init() },
         };
 
-        invoke_signed(&instruction, &[self.from, self.to, self.authority], signers)
+        invoke_signed(
+            &instruction, 
+            &[self.from, self.to, self.authority], 
+            signers
+        )
     }
 }

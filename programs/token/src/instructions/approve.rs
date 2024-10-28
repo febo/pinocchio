@@ -1,7 +1,10 @@
 use core::mem::MaybeUninit;
 
 use pinocchio::{
-    account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, ProgramResult
+    account_info::AccountInfo,
+    instruction::{AccountMeta, Instruction, Signer},
+    program::invoke_signed,
+    ProgramResult,
 };
 
 /// Approves a delegate.
@@ -13,15 +16,12 @@ use pinocchio::{
 pub struct Approve<'a> {
     /// Source Account.
     pub token: &'a AccountInfo,
-
     /// Delegate Account
     pub delegate: &'a AccountInfo,
-
     /// Source Owner Account
     pub authority: &'a AccountInfo,
-
     /// Amount
-    pub amount: u64
+    pub amount: u64,
 }
 
 impl<'a> Approve<'a> {
@@ -31,25 +31,25 @@ impl<'a> Approve<'a> {
     }
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
-        // account metadata
+        // Account metadata
         let account_metas: [AccountMeta; 3] = [
             AccountMeta::writable(self.token.key()),
             AccountMeta::readonly(self.delegate.key()),
             AccountMeta::readonly_signer(self.authority.key()),
         ];
 
-        // instruction data
-        // -  [0..4]: instruction discriminator
-        // -  [4..12]: amount
-        let mut instruction_data = MaybeUninit::<[u8; 12]>::uninit();
+        // Instruction data
+        // -  [0]: instruction discriminator (1 byte, u8)
+        // -  [1..9]: amount (8 bytes, u64)
+        let mut instruction_data = MaybeUninit::<[u8; 9]>::uninit();
 
-        // data
+        // Populate data
         unsafe {
             let ptr = instruction_data.as_mut_ptr() as *mut u8;
-
-            *(ptr as *mut u32) = 4;
-
-            *(ptr.add(4) as *mut u64) = self.amount;
+            // Set discriminator as u8 at offset [0]
+            *ptr = 4;
+            // Set amount as u64 at offset [1..9]
+            *(ptr.add(1) as *mut u64) = self.amount;
         }
 
         let instruction = Instruction {
@@ -59,8 +59,9 @@ impl<'a> Approve<'a> {
         };
 
         invoke_signed(
-            &instruction, 
-            &[self.token, self.delegate, self.authority], 
-            signers)
+            &instruction,
+            &[self.token, self.delegate, self.authority],
+            signers,
+        )
     }
 }

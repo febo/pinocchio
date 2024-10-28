@@ -14,16 +14,12 @@ use pinocchio::{
 pub struct MintToChecked<'a> {
     /// Mint Account.
     pub mint: &'a AccountInfo,
-
     /// Token Account.
     pub token: &'a AccountInfo,
-
     /// Mint Authority
     pub mint_authority: &'a AccountInfo,
-
     /// Amount
     pub amount:  u64,
-
     /// Decimals
     pub decimals: u8,
 }
@@ -42,21 +38,21 @@ impl<'a> MintToChecked<'a> {
             AccountMeta::readonly_signer(self.mint_authority.key()),
         ];
 
-        // instruction data
-        // -  [0..4]: instruction discriminator
-        // -  [4..12]: amount
-        // -  [12]: decimals
-        let mut instruction_data = MaybeUninit::<[u8; 12]>::uninit();
+        // Instruction data layout:
+        // -  [0]: instruction discriminator 
+        // -  [1..9]: amount 
+        // -  [9]: decimals
+        let mut instruction_data = MaybeUninit::<[u8; 10]>::uninit();
 
-        // data
+        // Populate data
         unsafe {
             let ptr = instruction_data.as_mut_ptr() as *mut u8;
-
-            *(ptr as *mut u32) = 14;
-
-            *(ptr.add(4) as *mut u64) = self.amount;
-
-            *ptr.add(12) = self.decimals;
+            // Set discriminator as u8 at offset [0]
+            *ptr = 14;
+            // Set amount as u64 at offset [1]
+            *(ptr.add(1) as *mut u64) = self.amount;
+            // Set decimals as u8 at offset [9]
+            *ptr.add(9) = self.decimals;
         }
 
         let instruction = Instruction {
@@ -68,6 +64,7 @@ impl<'a> MintToChecked<'a> {
         invoke_signed(
             &instruction, 
             &[self.mint, self.token, self.mint_authority], 
-            signers)
+            signers
+        )
     }
 }

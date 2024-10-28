@@ -17,19 +17,14 @@ use pinocchio::{
 pub struct TransferChecked<'a> {
     /// Sender account.
     pub from: &'a AccountInfo,
-
     /// Mint Account
     pub mint: &'a AccountInfo,
-
     /// Recipient account.
     pub to: &'a AccountInfo,
-
     /// Authority account.
     pub authority: &'a AccountInfo,
-
     /// Amount of microtokens to transfer.
     pub amount: u64,
-
     /// Decimal for the Token
     pub decimals: u8,
 }
@@ -49,23 +44,21 @@ impl<'a> TransferChecked<'a> {
             AccountMeta::readonly_signer(self.authority.key()),
         ];
 
-        // instruction data
-        // -  [0..4 ]: instruction discriminator
-        // -  [4..12]: amount
-        // -  [12]: decimals
-        let mut instruction_data = MaybeUninit::<[u8; 12]>::uninit();
+        // Instruction data layout:
+        // -  [0]: instruction discriminator 
+        // -  [1..9]: amount 
+        // -  [9]: decimals
+        let mut instruction_data = MaybeUninit::<[u8; 10]>::uninit();
 
+        // Populate data
         unsafe {
-            // Get a mutable pointer to the instruction_data
             let ptr = instruction_data.as_mut_ptr() as *mut u8;
-
-            // Write 3 as u32 to the first 4 bytes
-            *(ptr as *mut u32) = 12;
-
-            // Write self.amount as u64 to the next 8 bytes
-            *(ptr.add(4) as *mut u64) = self.amount;
-
-            *ptr.add(12) = self.decimals;
+            // Set discriminator as u8 at offset [0]
+            *ptr = 12;
+            // Set amount as u64 at offset [1]
+            *(ptr.add(1) as *mut u64) = self.amount;
+            // Set decimals as u8 at offset [9]
+            *ptr.add(9) = self.decimals;
         }
 
         let instruction = Instruction {
@@ -74,6 +67,10 @@ impl<'a> TransferChecked<'a> {
             data: unsafe { &instruction_data.assume_init() },
         };
 
-        invoke_signed(&instruction, &[self.from, self.to, self.authority], signers)
+        invoke_signed(
+            &instruction, 
+            &[self.from, self.to, self.authority], 
+            signers
+        )
     }
 }

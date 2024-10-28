@@ -13,13 +13,10 @@ use pinocchio::{
 pub struct InitilizeAccount2<'a> {
     /// New Account.
     pub token: &'a AccountInfo,
-
     /// Mint Account.
     pub mint: &'a AccountInfo,
-
     /// Rent Sysvar Account
     pub rent_sysvar: &'a AccountInfo,
-
     /// Owner of the new Account.
     pub owner: Pubkey
 }
@@ -39,17 +36,17 @@ impl<'a> InitilizeAccount2<'a> {
         ];
 
         // instruction data
-        // -  [0..4]: instruction discriminator
-        // -  [4..36]: owner
-        let mut instruction_data = MaybeUninit::<[u8; 12]>::uninit();
+        // -  [0]: instruction discriminator
+        // -  [1..33]: owner
+        let mut instruction_data = MaybeUninit::<[u8; 33]>::uninit();
 
         // data
         unsafe {
             let ptr = instruction_data.as_mut_ptr() as *mut u8;
-
-            *(ptr as *mut u32) = 16;
-
-            *(ptr.add(4) as *mut Pubkey) = self.owner;
+            // Set discriminator as u8 at offset [0]
+            *ptr = 16;
+            // Set owner as Pubkey at offset [1..33]
+            *(ptr.add(1) as *mut Pubkey) = self.owner;
         }
 
         let instruction = Instruction {
@@ -61,6 +58,7 @@ impl<'a> InitilizeAccount2<'a> {
         invoke_signed(
             &instruction, 
             &[self.token, self.mint, self.rent_sysvar], 
-            signers)
+            signers
+        )
     }
 }

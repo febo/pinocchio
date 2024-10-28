@@ -14,13 +14,10 @@ use pinocchio::{
 pub struct MintTo<'a> {
     /// Mint Account.
     pub mint: &'a AccountInfo,
-
     /// Token Account.
     pub token: &'a AccountInfo,
-
     /// Mint Authority
     pub mint_authority: &'a AccountInfo,
-
     /// Amount
     pub amount:  u64,
 }
@@ -39,18 +36,18 @@ impl<'a> MintTo<'a> {
             AccountMeta::readonly_signer(self.mint_authority.key()),
         ];
 
-        // instruction data
-        // -  [0..4]: instruction discriminator
-        // -  [4..12]: amount
-        let mut instruction_data = MaybeUninit::<[u8; 12]>::uninit();
+        // Instruction data layout:
+        // -  [0]: instruction discriminator 
+        // -  [1..9]: amount 
+        let mut instruction_data = MaybeUninit::<[u8; 9]>::uninit();
 
-        // data
+        // Populate data
         unsafe {
             let ptr = instruction_data.as_mut_ptr() as *mut u8;
-
-            *(ptr as *mut u32) = 7;
-
-            *(ptr.add(4) as *mut u64) = self.amount;
+            // Set discriminator as u8 at offset [0]
+            *ptr = 14;
+            // Set amount as u64 at offset [1]
+            *(ptr.add(1) as *mut u64) = self.amount;
         }
 
         let instruction = Instruction {
@@ -62,6 +59,7 @@ impl<'a> MintTo<'a> {
         invoke_signed(
             &instruction, 
             &[self.mint, self.token, self.mint_authority], 
-            signers)
+            signers
+        )
     }
 }

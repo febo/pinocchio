@@ -8,61 +8,52 @@ use pinocchio::{
 ///
 /// ### Accounts:
 ///   0. `[WRITABLE]` Mint account
-///   1. `[]` Rent sysvar
-pub struct InitilizeMint<'a> {
+pub struct InitilizeMint2<'a> {
     /// Mint Account.
     pub mint: &'a AccountInfo,
-
-    /// Rent sysvar Account.
-    pub rent_sysvar: &'a AccountInfo,
-
     /// Decimals.
     pub decimals: u8,
-
     /// Mint Authority.
     pub mint_authority: Pubkey,
-
     /// Freeze Authority.
-    pub freeze_authority: Option<Pubkey>
-
-
+    pub freeze_authority: Option<Pubkey>,
 }
 
-impl<'a> InitilizeMint<'a> {
+impl<'a> InitilizeMint2<'a> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
     }
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
-        // account metadata
-        let account_metas: [AccountMeta; 2] = [
+        // Account metadata
+        let account_metas: [AccountMeta; 1] = [
             AccountMeta::writable(self.mint.key()),
-            AccountMeta::readonly(self.rent_sysvar.key()),
         ];
 
-        // instruction data
-        // -  [0..4]: instruction discriminator
-        // -  [4]: decimals
-        // -  [5..37] mint_authority
-        // -  [37..70] freeze_authority
-        let mut instruction_data = MaybeUninit::<[u8; 12]>::uninit();
+        // Instruction data layout:
+        // -  [0]: instruction discriminator 
+        // -  [1]: decimals 
+        // -  [2..34]: mint_authority 
+        // -  [34..38]: freeze_authority presence flag 
+        // -  [38..70]: freeze_authority 
+        let mut instruction_data = MaybeUninit::<[u8; 70]>::uninit();
 
-        // data
+        // Populate data
         unsafe {
             let ptr = instruction_data.as_mut_ptr() as *mut u8;
-
-            *(ptr as *mut u32) = 20;
-
-            *ptr.add(4) = self.decimals;
-
-            *(ptr.add(5) as *mut Pubkey) = self.mint_authority;
-
-            if self.freeze_authority.is_some() {
-                *(ptr.add(37) as *mut  u32) = 1;
-                *(ptr.add(41) as *mut Pubkey) = self.freeze_authority.unwrap_unchecked();
-            } else { 
-                *(ptr.add(37) as *mut [u8; 36]) = [0;36];
+            // Set discriminator as u8 at offset [0]
+            *ptr = 20;
+            // Set decimals as u8 at offset [1]
+            *ptr.add(1) = self.decimals;
+            // Set mint_authority as Pubkey at offset [2..34]
+            *(ptr.add(2) as *mut Pubkey) = self.mint_authority;
+            // Set COption & freeze_authority at offset [34..70]
+            if let Some(freeze_auth) = self.freeze_authority {
+                *(ptr.add(34) as *mut  u32) = 1;
+                *(ptr.add(38) as *mut Pubkey) = freeze_auth;
+            } else {
+                *(ptr.add(34) as *mut [u8; 36]) = [0; 36];
             }
         }
 
@@ -74,7 +65,8 @@ impl<'a> InitilizeMint<'a> {
 
         invoke_signed(
             &instruction, 
-            &[self.mint, self.rent_sysvar], 
-            signers)
+            &[self.mint], 
+            signers
+        )
     }
 }

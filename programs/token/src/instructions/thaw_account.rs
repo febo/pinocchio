@@ -11,10 +11,8 @@ use pinocchio::{
 pub struct ThawAccount<'a> {
     /// Token Account to thaw.
     pub token: &'a AccountInfo,
-
     /// Mint Account.
     pub mint: &'a AccountInfo,
-
     /// Mint Freeze Authority Account
     pub freeze_authority: &'a AccountInfo
 }
@@ -42,6 +40,7 @@ impl<'a> ThawAccount<'a> {
         invoke_signed(
             &instruction, 
             &[self.token, self.mint, self.freeze_authority], 
-            signers)
+            signers
+        )
     }
 }

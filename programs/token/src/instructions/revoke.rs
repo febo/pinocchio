@@ -10,7 +10,6 @@ use pinocchio::{
 pub struct Revoke<'a> {
     /// New Account.
     pub token: &'a AccountInfo,
-
     /// Mint Account.
     pub authority: &'a AccountInfo,
 }
@@ -37,6 +36,7 @@ impl<'a> Revoke<'a> {
         invoke_signed(
             &instruction, 
             &[self.token, self.authority], 
-            signers)
+            signers
+        )
     }
 }

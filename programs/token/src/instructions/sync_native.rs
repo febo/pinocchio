@@ -34,6 +34,7 @@ impl<'a> SyncNative<'a> {
         invoke_signed(
             &instruction, 
             &[self.native_token], 
-            signers)
+            signers
+        )
     }
 }

@@ -12,13 +12,10 @@ use pinocchio::{
 pub struct InitilizeAccount<'a> {
     /// New Account.
     pub token: &'a AccountInfo,
-
     /// Mint Account.
     pub mint: &'a AccountInfo,
-
     /// Owner of the new Account.
     pub owner: &'a AccountInfo,
-
     /// Rent Sysvar Account
     pub rent_sysvar:  &'a AccountInfo,
 }
@@ -47,6 +44,7 @@ impl<'a> InitilizeAccount<'a> {
         invoke_signed(
             &instruction, 
             &[self.token, self.mint, self.owner, self.rent_sysvar], 
-            signers)
+            signers
+        )
     }
 }
