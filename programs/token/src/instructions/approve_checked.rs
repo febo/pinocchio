@@ -49,7 +49,7 @@ impl<'a> ApproveChecked<'a> {
         // instruction data
         // -  [0..4]: instruction discriminator
         // -  [4..12]: amount
-        // -  [12..13]: decimals
+        // -  [12]: decimals
 
         let mut instruction_data = MaybeUninit::<[u8; 12]>::uninit();
 
@@ -61,7 +61,7 @@ impl<'a> ApproveChecked<'a> {
 
             *(ptr.add(4) as *mut u64) = self.amount;
 
-            *(ptr.add(12) as *mut u8) = self.decimals;
+            *ptr.add(12) = self.decimals;
         }
 
         let instruction = Instruction {

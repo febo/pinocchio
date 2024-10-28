@@ -42,7 +42,7 @@ impl<'a> Transfer<'a> {
         ];
 
         // instruction data
-        // -  [0..4 ]: instruction discriminator
+        // -  [0..4]: instruction discriminator
         // -  [4..12]: amount
         let mut instruction_data = MaybeUninit::<[u8; 12]>::uninit();
 

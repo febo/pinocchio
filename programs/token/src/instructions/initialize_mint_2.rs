@@ -43,7 +43,7 @@ impl<'a> InitilizeMint<'a> {
 
         // instruction data
         // -  [0..4]: instruction discriminator
-        // -  [4..5]: decimals
+        // -  [4]: decimals
         // -  [5..37] mint_authority
         // -  [37..70] freeze_authority
         let mut instruction_data = MaybeUninit::<[u8; 12]>::uninit();
@@ -54,7 +54,7 @@ impl<'a> InitilizeMint<'a> {
 
             *(ptr as *mut u32) = 20;
 
-            *(ptr.add(4) as *mut u8) = self.decimals;
+            *ptr.add(4) = self.decimals;
 
             *(ptr.add(5) as *mut Pubkey) = self.mint_authority;
 

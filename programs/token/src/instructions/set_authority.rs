@@ -38,7 +38,7 @@ impl<'a> SetAuthority<'a> {
 
         // instruction data
         // -  [0..4]: instruction discriminator
-        // -  [4..5]: authority_type
+        // -  [4]: authority_type
         // -  [5..38] new_authority
         let mut instruction_data = MaybeUninit::<[u8; 12]>::uninit();
 
@@ -54,7 +54,7 @@ impl<'a> SetAuthority<'a> {
                 *(ptr.add(5) as *mut  u32) = 1;
                 *(ptr.add(9) as *mut Pubkey) = self.new_authority.unwrap_unchecked();
             } else { 
-                *(ptr.add(5) as *mut [u8; 36]) = [0;36];
+                *(ptr.add(5) as *mut [u8; 36]) = [0; 36];
             }
         }
 
