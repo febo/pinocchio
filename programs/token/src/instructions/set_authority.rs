@@ -9,7 +9,7 @@ use pinocchio::{
 /// ### Accounts:
 ///   0. `[WRITE]` The mint or account to change the authority of.
 ///   1. `[SIGNER]` The current authority of the mint or account.
-    pub struct SetAuthority<'a> {
+pub struct SetAuthority<'a> {
     /// Account (Mint or Token)
     pub account: &'a AccountInfo,
 
@@ -21,6 +21,15 @@ use pinocchio::{
 
     /// The new authority
     new_authority: Option<Pubkey>,
+}
+
+#[repr(u8)]
+#[derive(Clone, Copy)]
+pub enum AuthorityType {
+    MintTokens = 0,
+    FreezeAccount = 1,
+    AccountOwner = 2,
+    CloseAccount = 3,
 }
 
 impl<'a> SetAuthority<'a> {
