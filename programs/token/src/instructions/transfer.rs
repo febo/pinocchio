@@ -55,7 +55,7 @@ impl<'a> Transfer<'a> {
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: unsafe { &instruction_data.assume_init() },
+            data: unsafe { instruction_data.assume_init_ref() },
         };
 
         invoke_signed(
