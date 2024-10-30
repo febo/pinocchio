@@ -4,6 +4,16 @@ use pinocchio::{
     account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, pubkey::Pubkey, ProgramResult
 };
 
+#[repr(u8)]
+#[derive(Clone, Copy)]
+pub enum AuthorityType {
+    MintTokens,
+    FreezeAccount,
+    AccountOwner,
+    CloseAccount,
+}
+
+
 /// Sets a new authority of a mint or account.
 ///
 /// ### Accounts:
@@ -17,19 +27,10 @@ pub struct SetAuthority<'a> {
     pub authority: &'a AccountInfo,
 
     /// The type of authority to update.
-    authority_type: AuthorityType,
+    pub authority_type: AuthorityType,
 
     /// The new authority
-    new_authority: Option<Pubkey>,
-}
-
-#[repr(u8)]
-#[derive(Clone, Copy)]
-pub enum AuthorityType {
-    MintTokens = 0,
-    FreezeAccount = 1,
-    AccountOwner = 2,
-    CloseAccount = 3,
+    pub new_authority: Option<Pubkey>,
 }
 
 impl<'a> SetAuthority<'a> {
@@ -41,29 +42,29 @@ impl<'a> SetAuthority<'a> {
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
         // account metadata
         let account_metas: [AccountMeta; 2] = [
-            AccountMeta::writable_signer(self.account.key()),
+            AccountMeta::writable(self.account.key()),
             AccountMeta::readonly_signer(self.authority.key())
         ];
 
         // instruction data
-        // -  [0..4]: instruction discriminator
-        // -  [4]: authority_type
-        // -  [5..38] new_authority
-        let mut instruction_data = MaybeUninit::<[u8; 12]>::uninit();
+        // -  [0]: instruction discriminator
+        // -  [1]: authority_type
+        // -  [2..35] new_authority
+        let mut instruction_data = MaybeUninit::<[u8; 35]>::uninit();
 
         // data
         unsafe {
             let ptr = instruction_data.as_mut_ptr() as *mut u8;
 
-            *(ptr as *mut u32) = 6;
+            *ptr = 6;
 
-            *(ptr.add(4) as *mut AuthorityType) = self.authority_type;
+            *(ptr.add(1) as *mut AuthorityType) = self.authority_type;
 
             if self.new_authority.is_some() {
-                *(ptr.add(5) as *mut  u32) = 1;
-                *(ptr.add(9) as *mut Pubkey) = self.new_authority.unwrap_unchecked();
+                *ptr.add(2) = 1;
+                *(ptr.add(3) as *mut [u8; 32]) = self.new_authority.unwrap_unchecked();
             } else { 
-                *(ptr.add(5) as *mut [u8; 36]) = [0; 36];
+                *(ptr.add(5) as *mut [u8; 33]) = [0; 33];
             }
         }
 

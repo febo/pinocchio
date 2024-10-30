@@ -45,7 +45,7 @@ impl<'a> MintTo<'a> {
         unsafe {
             let ptr = instruction_data.as_mut_ptr() as *mut u8;
             // Set discriminator as u8 at offset [0]
-            *ptr = 14;
+            *ptr = 7;
             // Set amount as u64 at offset [1]
             *(ptr.add(1) as *mut u64) = self.amount;
         }

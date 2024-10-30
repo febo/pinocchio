@@ -29,7 +29,7 @@ impl<'a> InitilizeAccount<'a> {
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
         // account metadata
         let account_metas: [AccountMeta; 4] = [
-            AccountMeta::writable_signer(self.token.key()),
+            AccountMeta::writable(self.token.key()),
             AccountMeta::readonly(self.mint.key()),
             AccountMeta::readonly(self.owner.key()),
             AccountMeta::readonly(self.rent_sysvar.key()),
