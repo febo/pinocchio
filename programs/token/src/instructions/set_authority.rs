@@ -1,7 +1,7 @@
 use core::mem::MaybeUninit;
 
 use pinocchio::{
-    account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, pubkey::Pubkey, ProgramResult
+    account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, ProgramResult
 };
 
 #[repr(u8)]
@@ -30,7 +30,7 @@ pub struct SetAuthority<'a> {
     pub authority_type: AuthorityType,
 
     /// The new authority
-    pub new_authority: Option<Pubkey>,
+    pub new_authority: Option<[u8;32]>,
 }
 
 impl<'a> SetAuthority<'a> {

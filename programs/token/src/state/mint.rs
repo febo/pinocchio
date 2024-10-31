@@ -41,7 +41,7 @@ impl Mint {
         unsafe { *self.0.add(44) }
     }
 
-    pub fn is_frozen(&self) -> bool {
+    pub fn is_initialized(&self) -> bool {
         unsafe { *(self.0.add(45) as *const bool) }
     }
 
