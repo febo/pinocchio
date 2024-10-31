@@ -15,7 +15,7 @@ pub struct InitilizeAccount3<'a> {
     /// Mint Account.
     pub mint: &'a AccountInfo,
     /// Owner of the new Account.
-    pub owner: Pubkey
+    pub owner: &'a Pubkey
 }
 
 impl<'a> InitilizeAccount3<'a> {
@@ -42,7 +42,7 @@ impl<'a> InitilizeAccount3<'a> {
             // Set discriminator as u8 at offset [0]
             *ptr = 18;
             // Set owner as Pubkey at offset [1..33]
-            *(ptr.add(1) as *mut Pubkey) = self.owner;
+            *(ptr.add(1) as *mut Pubkey) = *self.owner;
         }
 
         let instruction = Instruction {

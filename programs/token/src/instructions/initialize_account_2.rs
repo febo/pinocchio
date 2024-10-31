@@ -18,7 +18,7 @@ pub struct InitilizeAccount2<'a> {
     /// Rent Sysvar Account
     pub rent_sysvar: &'a AccountInfo,
     /// Owner of the new Account.
-    pub owner: Pubkey
+    pub owner: &'a Pubkey
 }
 
 impl<'a> InitilizeAccount2<'a> {
@@ -46,7 +46,7 @@ impl<'a> InitilizeAccount2<'a> {
             // Set discriminator as u8 at offset [0]
             *ptr = 16;
             // Set owner as Pubkey at offset [1..33]
-            *(ptr.add(1) as *mut Pubkey) = self.owner;
+            *(ptr.add(1) as *mut Pubkey) = *self.owner;
         }
 
         let instruction = Instruction {
