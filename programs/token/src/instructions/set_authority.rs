@@ -1,16 +1,18 @@
-use core::mem::MaybeUninit;
+use core::slice::from_raw_parts;
 
 use pinocchio::{
     account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, pubkey::Pubkey, ProgramResult
 };
 
+use crate::{UNINIT_BYTE, write_bytes};
+
 #[repr(u8)]
 #[derive(Clone, Copy)]
 pub enum AuthorityType {
-    MintTokens,
-    FreezeAccount,
-    AccountOwner,
-    CloseAccount,
+    MintTokens = 0,
+    FreezeAccount = 1,
+    AccountOwner = 2,
+    CloseAccount = 3,
 }
 
 
@@ -50,28 +52,24 @@ impl<'a> SetAuthority<'a> {
         // -  [0]: instruction discriminator
         // -  [1]: authority_type
         // -  [2..35] new_authority
-        let mut instruction_data = MaybeUninit::<[u8; 35]>::uninit();
+        let mut instruction_data = [UNINIT_BYTE; 35];
 
-        // data
-        unsafe {
-            let ptr = instruction_data.as_mut_ptr() as *mut u8;
-
-            *ptr = 6;
-
-            *(ptr.add(1) as *mut AuthorityType) = self.authority_type;
-
-            if self.new_authority.is_some() {
-                *ptr.add(2) = 1;
-                *(ptr.add(3) as *mut [u8; 32]) = *self.new_authority.unwrap_unchecked();
-            } else { 
-                *(ptr.add(5) as *mut [u8; 33]) = [0; 33];
-            }
+        // Set discriminator as u8 at offset [0]
+        write_bytes(&mut instruction_data, &[6]);
+        // Set authority_type as u8 at offset [1]
+        write_bytes(&mut instruction_data[1..2], &[self.authority_type as u8]);
+        // Set new_authority as [u8; 32] at offset [2..35]
+        if let Some(new_authority) = self.new_authority {
+            write_bytes(&mut instruction_data[2..3], &[1]);
+            write_bytes(&mut instruction_data[3..], new_authority);
+        } else {
+            write_bytes(&mut instruction_data[2..], &[0; 33]);
         }
-
+        
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: unsafe { &instruction_data.assume_init() },
+            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 35) },
         };
 
         invoke_signed(

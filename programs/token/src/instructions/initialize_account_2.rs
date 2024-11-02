@@ -1,8 +1,10 @@
-use core::mem::MaybeUninit;
+use core::slice::from_raw_parts;
 
 use pinocchio::{
     account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, pubkey::Pubkey, ProgramResult
 };
+
+use crate::{write_bytes, UNINIT_BYTE};
 
 /// Initialize a new Token Account.
 ///
@@ -38,21 +40,17 @@ impl<'a> InitilizeAccount2<'a> {
         // instruction data
         // -  [0]: instruction discriminator
         // -  [1..33]: owner
-        let mut instruction_data = MaybeUninit::<[u8; 33]>::uninit();
+        let mut instruction_data = [UNINIT_BYTE; 33];
 
-        // data
-        unsafe {
-            let ptr = instruction_data.as_mut_ptr() as *mut u8;
-            // Set discriminator as u8 at offset [0]
-            *ptr = 16;
-            // Set owner as Pubkey at offset [1..33]
-            *(ptr.add(1) as *mut Pubkey) = *self.owner;
-        }
+        // Set discriminator as u8 at offset [0]
+        write_bytes(&mut instruction_data, &[16]);
+        // Set owner as [u8; 32] at offset [1..33]
+        write_bytes(&mut instruction_data[1..], self.owner);
 
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: unsafe { &instruction_data.assume_init() },
+            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 33) },
         };
 
         invoke_signed(

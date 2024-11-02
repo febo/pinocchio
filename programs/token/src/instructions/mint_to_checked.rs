@@ -1,8 +1,10 @@
-use core::mem::MaybeUninit;
+use core::slice::from_raw_parts;
 
 use pinocchio::{
     account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, ProgramResult
 };
+
+use crate::{UNINIT_BYTE, write_bytes};
 
 /// Mints new tokens to an account.
 ///
@@ -42,23 +44,19 @@ impl<'a> MintToChecked<'a> {
         // -  [0]: instruction discriminator 
         // -  [1..9]: amount 
         // -  [9]: decimals
-        let mut instruction_data = MaybeUninit::<[u8; 10]>::uninit();
+        let mut instruction_data = [UNINIT_BYTE; 10];
 
-        // Populate data
-        unsafe {
-            let ptr = instruction_data.as_mut_ptr() as *mut u8;
-            // Set discriminator as u8 at offset [0]
-            *ptr = 14;
-            // Set amount as u64 at offset [1]
-            *(ptr.add(1) as *mut u64) = self.amount;
-            // Set decimals as u8 at offset [9]
-            *ptr.add(9) = self.decimals;
-        }
+        // Set discriminator as u8 at offset [0]
+        write_bytes(&mut instruction_data, &[14]);
+        // Set amount as u64 at offset [1..9]
+        write_bytes(&mut instruction_data[1..9], &self.amount.to_le_bytes());
+        // Set decimals as u8 at offset [9]
+        write_bytes(&mut instruction_data[9..], &[self.decimals]);
 
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: unsafe { &instruction_data.assume_init() },
+            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 10) },
         };
 
         invoke_signed(

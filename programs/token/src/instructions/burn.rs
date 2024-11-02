@@ -1,4 +1,4 @@
-use core::mem::MaybeUninit;
+use core::slice::from_raw_parts;
 
 use pinocchio::{
     account_info::AccountInfo,
@@ -6,6 +6,8 @@ use pinocchio::{
     program::invoke_signed,
     ProgramResult,
 };
+
+use crate::{write_bytes, UNINIT_BYTE};
 
 /// Burns tokens by removing them from an account.
 ///
@@ -41,21 +43,17 @@ impl<'a> Burn<'a> {
         // Instruction data
         // -  [0]: instruction discriminator (1 byte, u8)
         // -  [1..9]: amount (8 bytes, u64)
-        let mut instruction_data = MaybeUninit::<[u8; 9]>::uninit();
+        let mut instruction_data = [UNINIT_BYTE; 9];
 
-        // Populate data
-        unsafe {
-            let ptr = instruction_data.as_mut_ptr() as *mut u8;
-            // Set discriminator as u8 at offset [0]
-            *ptr = 8;
-            // Set amount as u64 at offset [1..9]
-            *(ptr.add(1) as *mut u64) = self.amount;
-        }
+        // Set discriminator as u8 at offset [0]
+        write_bytes(&mut instruction_data, &[8]);
+        // Set amount as u64 at offset [1..9]
+        write_bytes(&mut instruction_data[1..], &self.amount.to_le_bytes());
 
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: unsafe { &instruction_data.assume_init() },
+            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 9) },
         };
 
         invoke_signed(

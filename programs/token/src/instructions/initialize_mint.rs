@@ -1,4 +1,4 @@
-use core::mem::MaybeUninit;
+use core::slice::from_raw_parts;
 
 use pinocchio::{
     account_info::AccountInfo,
@@ -7,6 +7,8 @@ use pinocchio::{
     pubkey::Pubkey,
     ProgramResult,
 };
+
+use crate::{write_bytes, UNINIT_BYTE};
 
 /// Initialize a new mint.
 ///
@@ -45,30 +47,26 @@ impl<'a> InitilizeMint<'a> {
         // -  [2..34]: mint_authority 
         // -  [34]: freeze_authority presence flag 
         // -  [35..68]: freeze_authority 
-        let mut instruction_data = MaybeUninit::<[u8; 67]>::uninit();
+        let mut instruction_data = [UNINIT_BYTE; 67];
 
-        // Populate data
-        unsafe {
-            let ptr = instruction_data.as_mut_ptr() as *mut u8;
-            // Set discriminator as u8 at offset [0]
-            *ptr = 0;
-            // Set decimals as u8 at offset [1]
-            *ptr.add(1) = self.decimals;
-            // Set mint_authority as Pubkey at offset [2..34]
-            *(ptr.add(2) as *mut Pubkey) = *self.mint_authority;
-            // Set COption & freeze_authority at offset [34..70]
-            if let Some(freeze_auth) = self.freeze_authority {
-                *ptr.add(34)  = 1;
-                *(ptr.add(35) as *mut Pubkey) = *freeze_auth;
-            } else {
-                *(ptr.add(34) as *mut [u8; 33]) = [0; 33];
-            }
+        // Set discriminator as u8 at offset [0]
+        write_bytes(&mut instruction_data, &[0]);
+        // Set decimals as u8 at offset [1]
+        write_bytes(&mut instruction_data[1..2], &[self.decimals]);
+        // Set mint_authority as Pubkey at offset [2..34]
+        write_bytes(&mut instruction_data[2..34], self.mint_authority);
+        // Set COption & freeze_authority at offset [34..67]
+        if let Some(freeze_auth) = self.freeze_authority {
+            write_bytes(&mut instruction_data[34..35], &[1]);
+            write_bytes(&mut instruction_data[35..], freeze_auth);
+        } else {
+            write_bytes(&mut instruction_data[34..], &[0; 33]);
         }
 
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: unsafe { &instruction_data.assume_init() },
+            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 67) },
         };
 
         invoke_signed(
