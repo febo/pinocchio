@@ -34,7 +34,7 @@ impl Mint {
     }
 
     pub fn supply(&self) -> u64 {
-        unsafe { *(self.0.add(36) as *const u64) }
+        unsafe { core::ptr::read_unaligned(self.0.add(36) as *const u64) }
     }
 
     pub fn decimals(&self) -> u8 {

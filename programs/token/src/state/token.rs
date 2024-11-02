@@ -72,11 +72,11 @@ impl TokenAccount {
     /// Use this when you know the account is native and you want to skip the Option check.
     #[inline(always)]
     pub fn native_amount_unchecked(&self) -> u64 {
-        unsafe { *(self.0.add(113) as *const u64) }
+        unsafe { core::ptr::read_unaligned(self.0.add(113) as *const u64) }
     }
 
     pub fn delegated_amount(&self) -> u64 {
-        unsafe { *(self.0.add(121) as *const u64) }
+        unsafe { core::ptr::read_unaligned(self.0.add(121) as *const u64) }
     }
 
     #[inline(always)]
