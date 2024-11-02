@@ -1,12 +1,12 @@
 use core::slice::from_raw_parts;
 
+use crate::{write_bytes, UNINIT_BYTE};
 use pinocchio::{
     account_info::AccountInfo,
     instruction::{AccountMeta, Instruction, Signer},
     program::invoke_signed,
     ProgramResult,
 };
-use crate::{UNINIT_BYTE, write_bytes};
 
 /// Burns tokens by removing them from an account.
 ///

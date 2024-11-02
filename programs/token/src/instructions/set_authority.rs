@@ -1,10 +1,14 @@
 use core::slice::from_raw_parts;
 
 use pinocchio::{
-    account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, pubkey::Pubkey, ProgramResult
+    account_info::AccountInfo,
+    instruction::{AccountMeta, Instruction, Signer},
+    program::invoke_signed,
+    pubkey::Pubkey,
+    ProgramResult,
 };
 
-use crate::{UNINIT_BYTE, write_bytes};
+use crate::{write_bytes, UNINIT_BYTE};
 
 #[repr(u8)]
 #[derive(Clone, Copy)]
@@ -14,7 +18,6 @@ pub enum AuthorityType {
     AccountOwner = 2,
     CloseAccount = 3,
 }
-
 
 /// Sets a new authority of a mint or account.
 ///
@@ -45,7 +48,7 @@ impl<'a> SetAuthority<'a> {
         // account metadata
         let account_metas: [AccountMeta; 2] = [
             AccountMeta::writable(self.account.key()),
-            AccountMeta::readonly_signer(self.authority.key())
+            AccountMeta::readonly_signer(self.authority.key()),
         ];
 
         // instruction data
@@ -65,16 +68,13 @@ impl<'a> SetAuthority<'a> {
         } else {
             write_bytes(&mut instruction_data[2..], &[0; 33]);
         }
-        
+
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
             data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 35) },
         };
 
-        invoke_signed(
-            &instruction, 
-            &[self.account, self.authority], 
-            signers)
+        invoke_signed(&instruction, &[self.account, self.authority], signers)
     }
 }

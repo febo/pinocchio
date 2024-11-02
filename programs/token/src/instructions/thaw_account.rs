@@ -1,5 +1,8 @@
 use pinocchio::{
-    account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, ProgramResult
+    account_info::AccountInfo,
+    instruction::{AccountMeta, Instruction, Signer},
+    program::invoke_signed,
+    ProgramResult,
 };
 
 /// Thaw a Frozen account using the Mint's freeze_authority
@@ -14,7 +17,7 @@ pub struct ThawAccount<'a> {
     /// Mint Account.
     pub mint: &'a AccountInfo,
     /// Mint Freeze Authority Account
-    pub freeze_authority: &'a AccountInfo
+    pub freeze_authority: &'a AccountInfo,
 }
 
 impl<'a> ThawAccount<'a> {
@@ -34,13 +37,13 @@ impl<'a> ThawAccount<'a> {
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: &[11]
+            data: &[11],
         };
 
         invoke_signed(
-            &instruction, 
-            &[self.token, self.mint, self.freeze_authority], 
-            signers
+            &instruction,
+            &[self.token, self.mint, self.freeze_authority],
+            signers,
         )
     }
 }

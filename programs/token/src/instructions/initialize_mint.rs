@@ -42,11 +42,11 @@ impl<'a> InitilizeMint<'a> {
         ];
 
         // Instruction data layout:
-        // -  [0]: instruction discriminator 
-        // -  [1]: decimals 
-        // -  [2..34]: mint_authority 
-        // -  [34]: freeze_authority presence flag 
-        // -  [35..68]: freeze_authority 
+        // -  [0]: instruction discriminator
+        // -  [1]: decimals
+        // -  [2..34]: mint_authority
+        // -  [34]: freeze_authority presence flag
+        // -  [35..68]: freeze_authority
         let mut instruction_data = [UNINIT_BYTE; 67];
 
         // Set discriminator as u8 at offset [0]
@@ -69,10 +69,6 @@ impl<'a> InitilizeMint<'a> {
             data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 67) },
         };
 
-        invoke_signed(
-            &instruction, 
-            &[self.mint, self.rent_sysvar], 
-            signers
-        )
+        invoke_signed(&instruction, &[self.mint, self.rent_sysvar], signers)
     }
 }

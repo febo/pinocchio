@@ -1,10 +1,14 @@
 use core::slice::from_raw_parts;
 
 use pinocchio::{
-    account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, pubkey::Pubkey, ProgramResult
+    account_info::AccountInfo,
+    instruction::{AccountMeta, Instruction, Signer},
+    program::invoke_signed,
+    pubkey::Pubkey,
+    ProgramResult,
 };
 
-use crate::{UNINIT_BYTE, write_bytes};
+use crate::{write_bytes, UNINIT_BYTE};
 
 /// Initialize a new Token Account.
 ///
@@ -17,7 +21,7 @@ pub struct InitilizeAccount3<'a> {
     /// Mint Account.
     pub mint: &'a AccountInfo,
     /// Owner of the new Account.
-    pub owner: &'a Pubkey
+    pub owner: &'a Pubkey,
 }
 
 impl<'a> InitilizeAccount3<'a> {
@@ -49,10 +53,6 @@ impl<'a> InitilizeAccount3<'a> {
             data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 33) },
         };
 
-        invoke_signed(
-            &instruction, 
-            &[self.token, self.mint], 
-            signers
-        )
+        invoke_signed(&instruction, &[self.token, self.mint], signers)
     }
 }

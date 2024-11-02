@@ -1,8 +1,11 @@
 use pinocchio::{
-    account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, ProgramResult
+    account_info::AccountInfo,
+    instruction::{AccountMeta, Instruction, Signer},
+    program::invoke_signed,
+    ProgramResult,
 };
 
-/// Given a native token account updates its amount field based 
+/// Given a native token account updates its amount field based
 /// on the account's underlying `lamports`.
 ///
 /// ### Accounts:
@@ -21,20 +24,14 @@ impl<'a> SyncNative<'a> {
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
         // account metadata
-        let account_metas: [AccountMeta; 1] = [
-            AccountMeta::writable(self.native_token.key()),
-        ];
+        let account_metas: [AccountMeta; 1] = [AccountMeta::writable(self.native_token.key())];
 
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: &[17]
+            data: &[17],
         };
 
-        invoke_signed(
-            &instruction, 
-            &[self.native_token], 
-            signers
-        )
+        invoke_signed(&instruction, &[self.native_token], signers)
     }
 }

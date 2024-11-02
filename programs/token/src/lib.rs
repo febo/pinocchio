@@ -14,4 +14,3 @@ fn write_bytes(destination: &mut [MaybeUninit<u8>], source: &[u8]) {
         d.write(*s);
     }
 }
-

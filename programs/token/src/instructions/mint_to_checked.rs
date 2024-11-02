@@ -1,10 +1,13 @@
 use core::slice::from_raw_parts;
 
 use pinocchio::{
-    account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, ProgramResult
+    account_info::AccountInfo,
+    instruction::{AccountMeta, Instruction, Signer},
+    program::invoke_signed,
+    ProgramResult,
 };
 
-use crate::{UNINIT_BYTE, write_bytes};
+use crate::{write_bytes, UNINIT_BYTE};
 
 /// Mints new tokens to an account.
 ///
@@ -12,7 +15,7 @@ use crate::{UNINIT_BYTE, write_bytes};
 ///   0. `[WRITE]` The mint.
 ///   1. `[WRITE]` The account to mint tokens to.
 ///   2. `[SIGNER]` The mint's minting authority.
-/// 
+///
 pub struct MintToChecked<'a> {
     /// Mint Account.
     pub mint: &'a AccountInfo,
@@ -21,7 +24,7 @@ pub struct MintToChecked<'a> {
     /// Mint Authority
     pub mint_authority: &'a AccountInfo,
     /// Amount
-    pub amount:  u64,
+    pub amount: u64,
     /// Decimals
     pub decimals: u8,
 }
@@ -41,8 +44,8 @@ impl<'a> MintToChecked<'a> {
         ];
 
         // Instruction data layout:
-        // -  [0]: instruction discriminator 
-        // -  [1..9]: amount 
+        // -  [0]: instruction discriminator
+        // -  [1..9]: amount
         // -  [9]: decimals
         let mut instruction_data = [UNINIT_BYTE; 10];
 
@@ -60,9 +63,9 @@ impl<'a> MintToChecked<'a> {
         };
 
         invoke_signed(
-            &instruction, 
-            &[self.mint, self.token, self.mint_authority], 
-            signers
+            &instruction,
+            &[self.mint, self.token, self.mint_authority],
+            signers,
         )
     }
 }

@@ -1,7 +1,11 @@
 use core::slice::from_raw_parts;
 
 use pinocchio::{
-    account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, pubkey::Pubkey, ProgramResult
+    account_info::AccountInfo,
+    instruction::{AccountMeta, Instruction, Signer},
+    program::invoke_signed,
+    pubkey::Pubkey,
+    ProgramResult,
 };
 
 use crate::{write_bytes, UNINIT_BYTE};
@@ -20,7 +24,7 @@ pub struct InitilizeAccount2<'a> {
     /// Rent Sysvar Account
     pub rent_sysvar: &'a AccountInfo,
     /// Owner of the new Account.
-    pub owner: &'a Pubkey
+    pub owner: &'a Pubkey,
 }
 
 impl<'a> InitilizeAccount2<'a> {
@@ -54,9 +58,9 @@ impl<'a> InitilizeAccount2<'a> {
         };
 
         invoke_signed(
-            &instruction, 
-            &[self.token, self.mint, self.rent_sysvar], 
-            signers
+            &instruction,
+            &[self.token, self.mint, self.rent_sysvar],
+            signers,
         )
     }
 }

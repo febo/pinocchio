@@ -7,7 +7,7 @@ use pinocchio::{
     ProgramResult,
 };
 
-use crate::{UNINIT_BYTE, write_bytes}; 
+use crate::{write_bytes, UNINIT_BYTE};
 
 /// Approves a delegate.
 ///

@@ -41,8 +41,8 @@ impl<'a> Transfer<'a> {
         ];
 
         // Instruction data layout:
-        // -  [0]: instruction discriminator 
-        // -  [1..9]: amount 
+        // -  [0]: instruction discriminator
+        // -  [1..9]: amount
         let mut instruction_data = [UNINIT_BYTE; 9];
 
         // Set discriminator as u8 at offset [0]
@@ -56,10 +56,6 @@ impl<'a> Transfer<'a> {
             data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 9) },
         };
 
-        invoke_signed(
-            &instruction, 
-            &[self.from, self.to, self.authority], 
-            signers
-        )
+        invoke_signed(&instruction, &[self.from, self.to, self.authority], signers)
     }
 }

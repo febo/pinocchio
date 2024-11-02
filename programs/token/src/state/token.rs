@@ -5,9 +5,7 @@ use pinocchio::{account_info::AccountInfo, pubkey::Pubkey};
 
 pub struct TokenAccount(*const u8);
 
-pub struct Token {
-    
-}
+pub struct Token {}
 
 impl TokenAccount {
     pub const LEN: usize = 165;
@@ -55,7 +53,6 @@ impl TokenAccount {
         unsafe { *(self.0.add(76) as *const Pubkey) }
     }
 
-
     pub fn state(&self) -> AccountState {
         unsafe { *(self.0.add(108) as *const AccountState) }
     }
@@ -77,7 +74,7 @@ impl TokenAccount {
     pub fn native_amount_unchecked(&self) -> u64 {
         unsafe { *(self.0.add(113) as *const u64) }
     }
-    
+
     pub fn delegated_amount(&self) -> u64 {
         unsafe { *(self.0.add(121) as *const u64) }
     }

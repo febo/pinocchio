@@ -1,5 +1,8 @@
 use pinocchio::{
-    account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, ProgramResult
+    account_info::AccountInfo,
+    instruction::{AccountMeta, Instruction, Signer},
+    program::invoke_signed,
+    ProgramResult,
 };
 
 /// Close an account by transferring all its SOL to the destination account.
@@ -28,19 +31,19 @@ impl<'a> CloseAccount<'a> {
         let account_metas: [AccountMeta; 3] = [
             AccountMeta::writable(self.account.key()),
             AccountMeta::writable(self.destination.key()),
-            AccountMeta::readonly_signer(self.authority.key())
+            AccountMeta::readonly_signer(self.authority.key()),
         ];
 
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: &[9]
+            data: &[9],
         };
 
         invoke_signed(
-            &instruction, 
-            &[self.account, self.destination, self.authority], 
-            signers
+            &instruction,
+            &[self.account, self.destination, self.authority],
+            signers,
         )
     }
 }

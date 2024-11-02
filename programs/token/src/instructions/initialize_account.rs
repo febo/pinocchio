@@ -1,5 +1,8 @@
 use pinocchio::{
-    account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, ProgramResult
+    account_info::AccountInfo,
+    instruction::{AccountMeta, Instruction, Signer},
+    program::invoke_signed,
+    ProgramResult,
 };
 
 /// Initialize a new Token Account.
@@ -17,7 +20,7 @@ pub struct InitilizeAccount<'a> {
     /// Owner of the new Account.
     pub owner: &'a AccountInfo,
     /// Rent Sysvar Account
-    pub rent_sysvar:  &'a AccountInfo,
+    pub rent_sysvar: &'a AccountInfo,
 }
 
 impl<'a> InitilizeAccount<'a> {
@@ -42,9 +45,9 @@ impl<'a> InitilizeAccount<'a> {
         };
 
         invoke_signed(
-            &instruction, 
-            &[self.token, self.mint, self.owner, self.rent_sysvar], 
-            signers
+            &instruction,
+            &[self.token, self.mint, self.owner, self.rent_sysvar],
+            signers,
         )
     }
 }

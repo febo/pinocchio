@@ -1,5 +1,8 @@
 use pinocchio::{
-    account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, ProgramResult
+    account_info::AccountInfo,
+    instruction::{AccountMeta, Instruction, Signer},
+    program::invoke_signed,
+    ProgramResult,
 };
 
 /// Revokes the delegate's authority.
@@ -30,13 +33,9 @@ impl<'a> Revoke<'a> {
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: &[5]
+            data: &[5],
         };
 
-        invoke_signed(
-            &instruction, 
-            &[self.token, self.authority], 
-            signers
-        )
+        invoke_signed(&instruction, &[self.token, self.authority], signers)
     }
 }

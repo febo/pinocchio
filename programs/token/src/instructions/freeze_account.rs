@@ -1,8 +1,11 @@
 use pinocchio::{
-    account_info::AccountInfo, instruction::{AccountMeta, Instruction, Signer}, program::invoke_signed, ProgramResult
+    account_info::AccountInfo,
+    instruction::{AccountMeta, Instruction, Signer},
+    program::invoke_signed,
+    ProgramResult,
 };
 
-/// Freeze an Initialized account using the Mint's freeze_authority 
+/// Freeze an Initialized account using the Mint's freeze_authority
 ///
 /// ### Accounts:
 ///   0. `[WRITE]` The account to freeze.
@@ -14,7 +17,7 @@ pub struct FreezeAccount<'a> {
     /// Mint Account.
     pub mint: &'a AccountInfo,
     /// Mint Freeze Authority Account
-    pub freeze_authority: &'a AccountInfo
+    pub freeze_authority: &'a AccountInfo,
 }
 
 impl<'a> FreezeAccount<'a> {
@@ -34,13 +37,13 @@ impl<'a> FreezeAccount<'a> {
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: &[10]
+            data: &[10],
         };
 
         invoke_signed(
-            &instruction, 
-            &[self.token, self.mint, self.freeze_authority], 
-            signers
+            &instruction,
+            &[self.token, self.mint, self.freeze_authority],
+            signers,
         )
     }
 }
