@@ -50,7 +50,7 @@ impl TokenAccount {
     }
 
     pub fn amount(&self) -> u64 {
-        unsafe { *(self.0.add(64) as *const u64) }
+        unsafe { core::ptr::read_unaligned(self.0.add(64) as *const u64) }
     }
 
     #[inline(always)]
