@@ -52,13 +52,14 @@ impl<'a> TransferChecked<'a> {
 
         // Populate data
         unsafe {
-            let ptr = instruction_data.as_mut_ptr() as *mut u8;
+            let buf = instruction_data.assume_init_mut();
+            
             // Set discriminator as u8 at offset [0]
-            *ptr = 12;
-            // Set amount as u64 at offset [1]
-            *(ptr.add(1) as *mut u64) = self.amount;
+            buf[0] = 12;
+            // Set amount as u64 (convert to bytes and copy into buffer)
+            buf[1..9].copy_from_slice(&self.amount.to_le_bytes());
             // Set decimals as u8 at offset [9]
-            *ptr.add(9) = self.decimals;
+            buf[9] = self.decimals;
         }
 
         let instruction = Instruction {
