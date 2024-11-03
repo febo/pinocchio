@@ -16,7 +16,7 @@ pub struct Logger<const BUFFER: usize> {
     buffer: [MaybeUninit<u8>; BUFFER],
 
     // Remaining space in the buffer.
-    remaining: usize,
+    offset: usize,
 }
 
 impl<const BUFFER: usize> Default for Logger<BUFFER> {
@@ -24,7 +24,7 @@ impl<const BUFFER: usize> Default for Logger<BUFFER> {
         const UNINIT_BYTE: MaybeUninit<u8> = MaybeUninit::uninit();
         Self {
             buffer: [UNINIT_BYTE; BUFFER],
-            remaining: BUFFER,
+            offset: 0,
         }
     }
 }
@@ -33,24 +33,23 @@ impl<const BUFFER: usize> Deref for Logger<BUFFER> {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
-        unsafe { from_raw_parts(self.buffer.as_ptr() as *const _, BUFFER - self.remaining) }
+        unsafe { from_raw_parts(self.buffer.as_ptr() as *const _, self.offset) }
     }
 }
 
 impl<const BUFFER: usize> Logger<BUFFER> {
     #[inline(always)]
     pub fn append<T: Log>(&mut self, value: T) {
-        if self.remaining == 0 {
+        if self.is_full() {
             if BUFFER > 0 {
-                let last = BUFFER - 1;
                 unsafe {
-                    self.buffer[last].assume_init_drop();
-                    self.buffer[last].write(TRUCATED);
+                    let last = self.buffer.get_unchecked_mut(BUFFER - 1);
+                    last.assume_init_drop();
+                    last.write(TRUCATED);
                 }
             }
         } else {
-            let size = value.log(&mut self.buffer[BUFFER - self.remaining..]);
-            self.remaining = self.remaining.saturating_sub(size);
+            self.offset += value.log(&mut self.buffer[self.offset..]);
         }
     }
 
@@ -61,22 +60,27 @@ impl<const BUFFER: usize> Logger<BUFFER> {
 
     #[inline(always)]
     pub fn clear(&mut self) {
-        self.remaining = BUFFER;
+        self.offset = 0;
     }
 
     #[inline(always)]
     pub fn is_empty(&self) -> bool {
-        self.remaining == BUFFER
+        self.offset == 0
     }
 
     #[inline(always)]
     pub fn is_full(&self) -> bool {
-        self.remaining == 0
+        self.offset == BUFFER
     }
 
     #[inline(always)]
     pub fn len(&self) -> usize {
-        BUFFER - self.remaining
+        self.offset
+    }
+
+    #[inline(always)]
+    pub fn remaining(&self) -> usize {
+        BUFFER - self.offset
     }
 }
 
@@ -102,34 +106,45 @@ pub trait Log {
 
 impl Log for u64 {
     fn log(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
-        let mut value = *self;
-        let mut offset = 0;
+        if buffer.is_empty() {
+            return 0;
+        }
 
+        let mut value = *self;
         // Handle zero as a special case.
         if value == 0 {
-            buffer[offset].write(DIGITS[0]);
+            unsafe {
+                buffer.get_unchecked_mut(0).write(*DIGITS.get_unchecked(0));
+            }
             1
         } else {
+            let mut offset = 0;
+
             while value > 0 && offset < buffer.len() {
                 let remainder = value % 10;
-                buffer[offset].write(DIGITS[remainder as usize]);
-                offset += 1;
                 value /= 10;
+
+                unsafe {
+                    buffer
+                        .get_unchecked_mut(offset)
+                        .write(*DIGITS.get_unchecked(remainder as usize));
+                }
+
+                offset += 1;
             }
             // Reverse the slice to get the correct order.
             buffer[0..offset].reverse();
 
-            // There maight not have been space for all the value.
+            // There might not have been space for all the value.
             if value > 0 {
-                let last = offset - 1;
                 unsafe {
-                    // Drop the previous value.
-                    buffer[last].assume_init_drop();
-                    buffer[last].write(TRUCATED);
+                    let last = buffer.get_unchecked_mut(offset - 1);
+                    last.assume_init_drop();
+                    last.write(TRUCATED);
                 }
             }
 
-            offset
+            10
         }
     }
 }

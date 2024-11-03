@@ -100,7 +100,9 @@ pub fn log(input: TokenStream) -> TokenStream {
 
         // Replace each occurrence of `{}` with their corresponding argument value.
         for part in part_iter {
-            replaced_parts.push(quote! { logger.append(#part) });
+            if !part.is_empty() {
+                replaced_parts.push(quote! { logger.append(#part) });
+            }
             part_count += 1;
 
             if let Some(arg) = arg_iter.next() {
@@ -139,7 +141,7 @@ pub fn log(input: TokenStream) -> TokenStream {
         // Generate the output string as a compile-time constant
         TokenStream::from(quote! {
             {
-                let mut logger = ::pinocchio_logger::Logger::<#buffer_len>::default();
+                let mut logger = pinocchio_log::logger::Logger::<#buffer_len>::default();
                 #(#replaced_parts;)*
                 logger.log();
             }
