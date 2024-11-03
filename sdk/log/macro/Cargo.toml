@@ -1,0 +1,13 @@
+[package]
+name = "pinocchio-log-macro"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+readme = "README.md"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "^1.0"
+syn = { version = "^1.0", features = ["extra-traits", "full"] }

@@ -22,6 +22,29 @@ name = "pinocchio"
 version = "0.6.0"
 
 [[package]]
+name = "pinocchio-log"
+version = "0.1.0"
+dependencies = [
+ "pinocchio-log-macro",
+ "pinocchio-logger",
+]
+
+[[package]]
+name = "pinocchio-log-macro"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "pinocchio-logger"
+version = "0.1.0"
+dependencies = [
+ "pinocchio-log-macro",
+]
+
+[[package]]
 name = "pinocchio-pubkey"
 version = "0.2.1"
 dependencies = [
@@ -36,3 +59,38 @@ dependencies = [
  "pinocchio",
  "pinocchio-pubkey",
 ]
+
+[[package]]
+name = "proc-macro2"
+version = "1.0.89"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f139b0662de085916d1fb67d2b4169d1addddda1919e696f3252b740b629986e"
+dependencies = [
+ "unicode-ident",
+]
+
+[[package]]
+name = "quote"
+version = "1.0.37"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5b9d34b8991d19d98081b46eacdd8eb58c6f2b201139f7c5f643cc155a633af"
+dependencies = [
+ "proc-macro2",
+]
+
+[[package]]
+name = "syn"
+version = "1.0.109"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-ident",
+]
+
+[[package]]
+name = "unicode-ident"
+version = "1.0.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e91b56cd4cadaeb79bbf1a5645f6b4f8dc5bde8834ad5894a8db35fda9efa1fe"

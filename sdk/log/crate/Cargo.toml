@@ -1,0 +1,12 @@
+[package]
+name = "pinocchio-log"
+description = "Efficient log utility for Solana programs"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+readme = "./README.md"
+repository = "https://github.com/febo/pinocchio"
+
+[dependencies]
+pinocchio-logger = { version = "^0", path = "../logger" }
+pinocchio-log-macro = { version = "^0", path = "../macro" }
