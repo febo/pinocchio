@@ -26,7 +26,6 @@ name = "pinocchio-log"
 version = "0.1.0"
 dependencies = [
  "pinocchio-log-macro",
- "pinocchio-logger",
 ]
 
 [[package]]
@@ -35,13 +34,6 @@ version = "0.1.0"
 dependencies = [
  "quote",
  "syn",
-]
-
-[[package]]
-name = "pinocchio-logger"
-version = "0.1.0"
-dependencies = [
- "pinocchio-log-macro",
 ]
 
 [[package]]

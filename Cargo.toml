@@ -3,7 +3,6 @@ resolver = "2"
 members = [
     "programs/system",
     "sdk/log/crate",
-    "sdk/log/logger",
     "sdk/log/macro",
     "sdk/pinocchio",
     "sdk/pubkey",
