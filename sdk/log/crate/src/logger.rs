@@ -5,6 +5,9 @@ extern "C" {
     pub fn sol_log_(message: *const u8, len: u64);
 }
 
+#[cfg(not(target_os = "solana"))]
+extern crate std;
+
 /// Byte representation of the digits [0, 9].
 const DIGITS: [u8; 10] = [b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9'];
 
@@ -92,8 +95,6 @@ pub fn log(message: &[u8]) {
     }
     #[cfg(not(target_os = "solana"))]
     {
-        extern crate std;
-
         let message = core::str::from_utf8(message).unwrap();
         std::println!("{}", message);
     }
@@ -144,7 +145,7 @@ impl Log for u64 {
                 }
             }
 
-            10
+            offset
         }
     }
 }
