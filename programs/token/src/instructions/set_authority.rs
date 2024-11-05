@@ -66,7 +66,7 @@ impl<'a> SetAuthority<'a> {
             write_bytes(&mut instruction_data[2..3], &[1]);
             write_bytes(&mut instruction_data[3..], new_authority);
         } else {
-            write_bytes(&mut instruction_data[2..], &[0; 33]);
+            write_bytes(&mut instruction_data[2..3], &[0]);
         }
 
         let instruction = Instruction {

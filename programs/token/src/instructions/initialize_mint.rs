@@ -60,7 +60,7 @@ impl<'a> InitilizeMint<'a> {
             write_bytes(&mut instruction_data[34..35], &[1]);
             write_bytes(&mut instruction_data[35..], freeze_auth);
         } else {
-            write_bytes(&mut instruction_data[34..], &[0; 33]);
+            write_bytes(&mut instruction_data[34..35], &[0]);
         }
 
         let instruction = Instruction {
