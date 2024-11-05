@@ -1,7 +1,11 @@
 use crate::ID;
 
 use super::AccountState;
-use pinocchio::{account_info::{AccountInfo, Ref}, program_error::ProgramError, pubkey::Pubkey};
+use pinocchio::{
+    account_info::{AccountInfo, Ref},
+    program_error::ProgramError,
+    pubkey::Pubkey,
+};
 
 pub struct TokenAccount(*const u8);
 
@@ -9,29 +13,41 @@ impl TokenAccount {
     pub const LEN: usize = 165;
 
     /// Performs owner and length validation on `AccountInfo` and returns a `Ref<T>` for safe borrowing.
-    pub fn from_account_info(account_info: &AccountInfo) -> Result<Ref<TokenAccount>, ProgramError> {
-        if account_info.data_len() != Self::LEN { return Err(ProgramError::InvalidAccountData) }
-        if account_info.owner() != &ID { return Err(ProgramError::InvalidAccountData) }
-        Ok(Ref::map(account_info.try_borrow_data()?, |data| {
-            unsafe { &*(data.as_ptr() as *const TokenAccount) }
+    pub fn from_account_info(
+        account_info: &AccountInfo,
+    ) -> Result<Ref<TokenAccount>, ProgramError> {
+        if account_info.data_len() != Self::LEN {
+            return Err(ProgramError::InvalidAccountData);
+        }
+        if account_info.owner() != &ID {
+            return Err(ProgramError::InvalidAccountData);
+        }
+        Ok(Ref::map(account_info.try_borrow_data()?, |data| unsafe {
+            &*(data.as_ptr() as *const TokenAccount)
         }))
     }
 
     /// # Safety
-    /// Performs owner and length validation on `AccountInfo` but performs unchecked borrowing and 
+    /// Performs owner and length validation on `AccountInfo` but performs unchecked borrowing and
     /// returns a `T` directly.
     #[inline(always)]
-    pub unsafe fn from_account_info_unchecked(account_info: &AccountInfo) -> Result<TokenAccount, ProgramError> {
-        if account_info.data_len() != Self::LEN { return Err(ProgramError::InvalidAccountData) }
-        if account_info.owner() != &ID { return Err(ProgramError::InvalidAccountData) }
-        Ok(Self::from_bytes(account_info.borrow_data_unchecked().as_ref()))
+    pub unsafe fn from_account_info_unchecked(
+        account_info: &AccountInfo,
+    ) -> Result<TokenAccount, ProgramError> {
+        if account_info.data_len() != Self::LEN {
+            return Err(ProgramError::InvalidAccountData);
+        }
+        if account_info.owner() != &ID {
+            return Err(ProgramError::InvalidAccountData);
+        }
+        Ok(Self::from_bytes(account_info.borrow_data_unchecked()))
     }
 
     /// # Safety
-    /// Constructs a `T` directly from a byte slice. The caller must ensure that `bytes` contains a 
+    /// Constructs a `T` directly from a byte slice. The caller must ensure that `bytes` contains a
     /// valid representation of `T`.
     pub unsafe fn from_bytes(bytes: &[u8]) -> Self {
-        core::ptr::read(bytes.as_ptr() as *const TokenAccount)
+        Self(bytes.as_ptr())
     }
 
     pub fn mint(&self) -> Pubkey {
