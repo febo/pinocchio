@@ -36,3 +36,11 @@ dependencies = [
  "pinocchio",
  "pinocchio-pubkey",
 ]
+
+[[package]]
+name = "pinocchio-token"
+version = "0.1.0"
+dependencies = [
+ "pinocchio",
+ "pinocchio-pubkey",
+]
