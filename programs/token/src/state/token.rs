@@ -151,7 +151,7 @@ impl TokenAccount {
         }
     }
 
-    /// Return the nativa amount.
+    /// Return the native amount.
     ///
     /// This method should be used when the caller knows that the token is native since it
     /// skips the `Option` check.
