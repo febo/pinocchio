@@ -1,11 +1,11 @@
-use crate::ID;
-
 use super::AccountState;
 use pinocchio::{
     account_info::{AccountInfo, Ref},
     program_error::ProgramError,
     pubkey::Pubkey,
 };
+
+use crate::ID;
 
 /// Token account data.
 #[repr(C)]
@@ -49,10 +49,13 @@ pub struct TokenAccount {
 }
 
 impl TokenAccount {
-    pub const LEN: usize = 165;
+    pub const LEN: usize = core::mem::size_of::<TokenAccount>();
 
-    /// Performs owner and length validation on `AccountInfo` and returns a `Ref<TokenAccount>`
-    /// for safe borrowing.
+    /// Return a `TokenAccount` from the given account info.
+    ///
+    /// This method performs owner and length validation on `AccountInfo`, safe borrowing
+    /// the account data.
+    #[inline]
     pub fn from_account_info(
         account_info: &AccountInfo,
     ) -> Result<Ref<TokenAccount>, ProgramError> {
@@ -63,15 +66,20 @@ impl TokenAccount {
             return Err(ProgramError::InvalidAccountData);
         }
         Ok(Ref::map(account_info.try_borrow_data()?, |data| unsafe {
-            &*(data.as_ptr() as *const TokenAccount)
+            Self::from_bytes(data)
         }))
     }
 
+    /// Return a `TokenAccount` from the given account info.
+    ///
+    /// This method performs owner and length validation on `AccountInfo`, but does not
+    /// perform the borrow check.
+    ///
     /// # Safety
     ///
-    /// Performs owner and length validation on `AccountInfo` but performs unchecked borrowing of
-    /// `TokenAccount`.
-    #[inline(always)]
+    /// The caller must ensure that it is safe to borrow the account data – e.g., there are
+    /// no mutable borrows of the account data.
+    #[inline]
     pub unsafe fn from_account_info_unchecked(
         account_info: &AccountInfo,
     ) -> Result<&TokenAccount, ProgramError> {
@@ -84,9 +92,12 @@ impl TokenAccount {
         Ok(Self::from_bytes(account_info.borrow_data_unchecked()))
     }
 
+    /// Return a `TokenAccount` from the given bytes.
+    ///
     /// # Safety
     ///
-    /// The caller must ensure that `bytes` contains a valid representation of a `TokenAccount`.
+    /// The caller must ensure that `bytes` contains a valid representation of `TokenAccount`.
+    #[inline(always)]
     pub unsafe fn from_bytes(bytes: &[u8]) -> &Self {
         &*(bytes.as_ptr() as *const TokenAccount)
     }
@@ -122,12 +133,12 @@ impl TokenAccount {
         &self.delegate
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn state(&self) -> AccountState {
         self.state.into()
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn is_native(&self) -> bool {
         self.is_native[0] == 1
     }
@@ -140,7 +151,10 @@ impl TokenAccount {
         }
     }
 
-    /// Use this when you know the account is native and you want to skip the `Option` check.
+    /// Return the nativa amount.
+    ///
+    /// This method should be used when the caller knows that the token is native since it
+    /// skips the `Option` check.
     #[inline(always)]
     pub fn native_amount_unchecked(&self) -> u64 {
         unsafe { core::ptr::read_unaligned(self.native_amount.as_ptr() as *const u64) }
@@ -163,19 +177,21 @@ impl TokenAccount {
         }
     }
 
-    /// Use this when you know the account will a close authority and you want to skip the
-    /// `Option` check.
+    /// Return the close authority.
+    ///
+    /// This method should be used when the caller knows that the token will have a close
+    /// authority set since it skips the `Option` check.
     #[inline(always)]
     pub fn close_authority_unchecked(&self) -> &Pubkey {
         &self.close_authority
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn is_initialized(&self) -> bool {
         self.state != AccountState::Uninitialized as u8
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn is_frozen(&self) -> bool {
         self.state == AccountState::Frozen as u8
     }

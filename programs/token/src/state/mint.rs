@@ -25,7 +25,7 @@ pub struct Mint {
     decimals: u8,
 
     /// Is `true` if this structure has been initialized.
-    is_initialized: bool,
+    is_initialized: u8,
 
     /// Indicates whether the freeze authority is present or not.
     freeze_authority_flag: [u8; 4],
@@ -35,27 +35,36 @@ pub struct Mint {
 }
 
 impl Mint {
-    pub const LEN: usize = 82;
+    /// The length of the `Mint` account data.
+    pub const LEN: usize = core::mem::size_of::<Mint>();
 
-    /// Performs owner and length validation on `AccountInfo` and returns a `Ref<Mint>` for
-    /// safe borrowing.
+    /// Return a `Mint` from the given account info.
+    ///
+    /// This method performs owner and length validation on `AccountInfo`, safe borrowing
+    /// the account data.
+    #[inline]
     pub fn from_account_info(account_info: &AccountInfo) -> Result<Ref<Mint>, ProgramError> {
         if account_info.data_len() != Self::LEN {
             return Err(ProgramError::InvalidAccountData);
         }
         if account_info.owner() != &ID {
-            return Err(ProgramError::InvalidAccountData);
+            return Err(ProgramError::InvalidAccountOwner);
         }
         Ok(Ref::map(account_info.try_borrow_data()?, |data| unsafe {
-            &*(data.as_ptr() as *const Mint)
+            Self::from_bytes(data)
         }))
     }
 
+    /// Return a `Mint` from the given account info.
+    ///
+    /// This method performs owner and length validation on `AccountInfo`, but does not
+    /// perform the borrow check.
+    ///
     /// # Safety
     ///
-    /// Performs owner and length validation on `AccountInfo` but performs unchecked borrowing of
-    /// `Mint`.
-    #[inline(always)]
+    /// The caller must ensure that it is safe to borrow the account data – e.g., there are
+    /// no mutable borrows of the account data.
+    #[inline]
     pub unsafe fn from_account_info_unchecked(
         account_info: &AccountInfo,
     ) -> Result<&Self, ProgramError> {
@@ -63,14 +72,17 @@ impl Mint {
             return Err(ProgramError::InvalidAccountData);
         }
         if account_info.owner() != &ID {
-            return Err(ProgramError::InvalidAccountData);
+            return Err(ProgramError::InvalidAccountOwner);
         }
         Ok(Self::from_bytes(account_info.borrow_data_unchecked()))
     }
 
+    /// Return a `Mint` from the given bytes.
+    ///
     /// # Safety
     ///
     /// The caller must ensure that `bytes` contains a valid representation of `Mint`.
+    #[inline(always)]
     pub unsafe fn from_bytes(bytes: &[u8]) -> &Self {
         &*(bytes.as_ptr() as *const Mint)
     }
@@ -88,8 +100,10 @@ impl Mint {
         }
     }
 
-    /// Use this when you know the account will have a mint authority and you want
-    /// to skip the `Option` check.
+    /// Return the mint authority.
+    ///
+    /// This method should be used when the caller knows that the mint will have a mint
+    /// authority set since it skips the `Option` check.
     #[inline(always)]
     pub fn mint_authority_unchecked(&self) -> &Pubkey {
         &self.mint_authority
@@ -104,7 +118,7 @@ impl Mint {
     }
 
     pub fn is_initialized(&self) -> bool {
-        self.is_initialized
+        self.is_initialized == 1
     }
 
     #[inline(always)]
@@ -120,8 +134,10 @@ impl Mint {
         }
     }
 
-    /// Use this when you know the account will have a freeze authority and you want
-    /// to skip the `Option` check.
+    /// Return the freeze authority.
+    ///
+    /// This method should be used when the caller knows that the mint will have a freeze
+    /// authority set since it skips the `Option` check.
     #[inline(always)]
     pub fn freeze_authority_unchecked(&self) -> &Pubkey {
         &self.freeze_authority
