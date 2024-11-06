@@ -1,5 +1,3 @@
-use crate::ID;
-
 use super::AccountState;
 use pinocchio::{
     account_info::{AccountInfo, Ref},
@@ -7,12 +5,57 @@ use pinocchio::{
     pubkey::Pubkey,
 };
 
-pub struct TokenAccount(*const u8);
+use crate::ID;
+
+/// Token account data.
+#[repr(C)]
+pub struct TokenAccount {
+    /// The mint associated with this account
+    mint: Pubkey,
+
+    /// The owner of this account.
+    owner: Pubkey,
+
+    /// The amount of tokens this account holds.
+    amount: [u8; 8],
+
+    /// Indicates whether the delegate is present or not.
+    delegate_flag: [u8; 4],
+
+    /// If `delegate` is `Some` then `delegated_amount` represents
+    /// the amount authorized by the delegate.
+    delegate: Pubkey,
+
+    /// The account's state.
+    state: u8,
+
+    /// Indicates whether this account represents a native token or not.
+    is_native: [u8; 4],
+
+    /// If is_native.is_some, this is a native token, and the value logs the
+    /// rent-exempt reserve. An Account is required to be rent-exempt, so
+    /// the value is used by the Processor to ensure that wrapped SOL
+    /// accounts do not drop below this threshold.
+    native_amount: [u8; 8],
+
+    /// The amount delegated.
+    delegated_amount: [u8; 8],
+
+    /// Indicates whether the close authority is present or not.
+    close_authority_flag: [u8; 4],
+
+    /// Optional authority to close the account.
+    close_authority: Pubkey,
+}
 
 impl TokenAccount {
-    pub const LEN: usize = 165;
+    pub const LEN: usize = core::mem::size_of::<TokenAccount>();
 
-    /// Performs owner and length validation on `AccountInfo` and returns a `Ref<T>` for safe borrowing.
+    /// Return a `TokenAccount` from the given account info.
+    ///
+    /// This method performs owner and length validation on `AccountInfo`, safe borrowing
+    /// the account data.
+    #[inline]
     pub fn from_account_info(
         account_info: &AccountInfo,
     ) -> Result<Ref<TokenAccount>, ProgramError> {
@@ -23,17 +66,23 @@ impl TokenAccount {
             return Err(ProgramError::InvalidAccountData);
         }
         Ok(Ref::map(account_info.try_borrow_data()?, |data| unsafe {
-            &*(data.as_ptr() as *const TokenAccount)
+            Self::from_bytes(data)
         }))
     }
 
+    /// Return a `TokenAccount` from the given account info.
+    ///
+    /// This method performs owner and length validation on `AccountInfo`, but does not
+    /// perform the borrow check.
+    ///
     /// # Safety
-    /// Performs owner and length validation on `AccountInfo` but performs unchecked borrowing and
-    /// returns a `T` directly.
-    #[inline(always)]
+    ///
+    /// The caller must ensure that it is safe to borrow the account data – e.g., there are
+    /// no mutable borrows of the account data.
+    #[inline]
     pub unsafe fn from_account_info_unchecked(
         account_info: &AccountInfo,
-    ) -> Result<TokenAccount, ProgramError> {
+    ) -> Result<&TokenAccount, ProgramError> {
         if account_info.data_len() != Self::LEN {
             return Err(ProgramError::InvalidAccountData);
         }
@@ -43,31 +92,34 @@ impl TokenAccount {
         Ok(Self::from_bytes(account_info.borrow_data_unchecked()))
     }
 
+    /// Return a `TokenAccount` from the given bytes.
+    ///
     /// # Safety
-    /// Constructs a `T` directly from a byte slice. The caller must ensure that `bytes` contains a
-    /// valid representation of `T`.
-    pub unsafe fn from_bytes(bytes: &[u8]) -> Self {
-        Self(bytes.as_ptr())
+    ///
+    /// The caller must ensure that `bytes` contains a valid representation of `TokenAccount`.
+    #[inline(always)]
+    pub unsafe fn from_bytes(bytes: &[u8]) -> &Self {
+        &*(bytes.as_ptr() as *const TokenAccount)
     }
 
-    pub fn mint(&self) -> Pubkey {
-        unsafe { *(self.0 as *const Pubkey) }
+    pub fn mint(&self) -> &Pubkey {
+        &self.mint
     }
 
-    pub fn authority(&self) -> Pubkey {
-        unsafe { *(self.0.add(32) as *const Pubkey) }
+    pub fn owner(&self) -> &Pubkey {
+        &self.owner
     }
 
     pub fn amount(&self) -> u64 {
-        unsafe { core::ptr::read_unaligned(self.0.add(64) as *const u64) }
+        unsafe { core::ptr::read_unaligned(self.amount.as_ptr() as *const u64) }
     }
 
     #[inline(always)]
     pub fn has_delegate(&self) -> bool {
-        unsafe { *(self.0.add(72) as *const bool) }
+        self.delegate_flag[0] == 1
     }
 
-    pub fn delegate(&self) -> Option<Pubkey> {
+    pub fn delegate(&self) -> Option<&Pubkey> {
         if self.has_delegate() {
             Some(self.delegate_unchecked())
         } else {
@@ -75,18 +127,20 @@ impl TokenAccount {
         }
     }
 
-    /// Use this when you know the account will have a delegate and want to skip the Option check.
+    /// Use this when you know the account will have a delegate and want to skip the `Option` check.
     #[inline(always)]
-    pub fn delegate_unchecked(&self) -> Pubkey {
-        unsafe { *(self.0.add(76) as *const Pubkey) }
+    pub fn delegate_unchecked(&self) -> &Pubkey {
+        &self.delegate
     }
 
+    #[inline(always)]
     pub fn state(&self) -> AccountState {
-        unsafe { *(self.0.add(108) as *const AccountState) }
+        self.state.into()
     }
 
+    #[inline(always)]
     pub fn is_native(&self) -> bool {
-        unsafe { *(self.0.add(109) as *const bool) }
+        self.is_native[0] == 1
     }
 
     pub fn native_amount(&self) -> Option<u64> {
@@ -97,22 +151,25 @@ impl TokenAccount {
         }
     }
 
-    /// Use this when you know the account is native and you want to skip the Option check.
+    /// Return the native amount.
+    ///
+    /// This method should be used when the caller knows that the token is native since it
+    /// skips the `Option` check.
     #[inline(always)]
     pub fn native_amount_unchecked(&self) -> u64 {
-        unsafe { core::ptr::read_unaligned(self.0.add(113) as *const u64) }
+        unsafe { core::ptr::read_unaligned(self.native_amount.as_ptr() as *const u64) }
     }
 
     pub fn delegated_amount(&self) -> u64 {
-        unsafe { core::ptr::read_unaligned(self.0.add(121) as *const u64) }
+        unsafe { core::ptr::read_unaligned(self.delegated_amount.as_ptr() as *const u64) }
     }
 
     #[inline(always)]
     pub fn has_close_authority(&self) -> bool {
-        unsafe { *(self.0.add(129) as *const bool) }
+        self.close_authority_flag[0] == 1
     }
 
-    pub fn close_authority(&self) -> Option<Pubkey> {
+    pub fn close_authority(&self) -> Option<&Pubkey> {
         if self.has_close_authority() {
             Some(self.close_authority_unchecked())
         } else {
@@ -120,9 +177,22 @@ impl TokenAccount {
         }
     }
 
-    /// Use this when you know the account will a close authority and you want to skip the Option check.
+    /// Return the close authority.
+    ///
+    /// This method should be used when the caller knows that the token will have a close
+    /// authority set since it skips the `Option` check.
     #[inline(always)]
-    pub fn close_authority_unchecked(&self) -> Pubkey {
-        unsafe { *(self.0.add(133) as *const Pubkey) }
+    pub fn close_authority_unchecked(&self) -> &Pubkey {
+        &self.close_authority
+    }
+
+    #[inline(always)]
+    pub fn is_initialized(&self) -> bool {
+        self.state != AccountState::Uninitialized as u8
+    }
+
+    #[inline(always)]
+    pub fn is_frozen(&self) -> bool {
+        self.state == AccountState::Frozen as u8
     }
 }
