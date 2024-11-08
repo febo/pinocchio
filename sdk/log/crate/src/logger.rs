@@ -3,6 +3,8 @@ use core::{mem::MaybeUninit, ops::Deref, slice::from_raw_parts};
 #[cfg(target_os = "solana")]
 extern "C" {
     pub fn sol_log_(message: *const u8, len: u64);
+
+    pub fn sol_memcpy_(dst: *mut u8, src: *const u8, n: u64);
 }
 
 #[cfg(not(target_os = "solana"))]
@@ -13,6 +15,9 @@ const DIGITS: [u8; 10] = [b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', 
 
 /// Byte represeting a truncated log.
 const TRUCATED: u8 = b'@';
+
+/// Maximum number of digits for a U64.
+const U64_DIGITS: usize = 20;
 
 pub struct Logger<const BUFFER: usize> {
     // Byte buffer to store the log message.
@@ -120,32 +125,45 @@ impl Log for u64 {
                 1
             }
             mut value => {
-                let mut offset = 0;
+                const UNINIT_BYTE: MaybeUninit<u8> = MaybeUninit::uninit();
+                let mut digits = [UNINIT_BYTE; U64_DIGITS];
+                let mut offset = U64_DIGITS;
 
-                while value > 0 && offset < buffer.len() {
+                while value > 0 {
                     let remainder = value % 10;
                     value /= 10;
+                    offset -= 1;
 
                     unsafe {
-                        buffer
+                        digits
                             .get_unchecked_mut(offset)
                             .write(*DIGITS.get_unchecked(remainder as usize));
                     }
-
-                    offset += 1;
                 }
-                // Reverse the slice to get the correct order.
-                buffer[0..offset].reverse();
+
+                let length = core::cmp::min(buffer.len(), U64_DIGITS - offset);
+
+                unsafe {
+                    let ptr = buffer.as_mut_ptr();
+                    #[cfg(target_os = "solana")]
+                    sol_memcpy_(
+                        ptr as *mut _,
+                        digits[offset..].as_ptr() as *const _,
+                        length as u64,
+                    );
+                    #[cfg(not(target_os = "solana"))]
+                    core::ptr::copy_nonoverlapping(digits[offset..].as_ptr(), ptr, length);
+                }
 
                 // There might not have been space for all the value.
-                if value > 0 {
+                if length != U64_DIGITS {
                     unsafe {
-                        let last = buffer.get_unchecked_mut(offset - 1);
+                        let last = buffer.get_unchecked_mut(length - 1);
                         last.write(TRUCATED);
                     }
                 }
 
-                offset
+                length
             }
         }
     }

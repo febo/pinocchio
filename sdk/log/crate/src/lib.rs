@@ -37,8 +37,6 @@ mod tests {
         logger.append("balance=");
         logger.append(1_000_000_000);
 
-        logger.log();
-
-        assert!(&*logger == "balance=10@".as_bytes());
+        assert!(&*logger == "balance=100@".as_bytes());
     }
 }
