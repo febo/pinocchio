@@ -9,3 +9,6 @@ repository = "https://github.com/febo/pinocchio"
 
 [dependencies]
 pinocchio-log-macro = { version = "^0", path = "../macro" }
+
+[lints.rust]
+unexpected_cfgs = {level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

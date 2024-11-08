@@ -16,9 +16,14 @@ const DIGITS: [u8; 10] = [b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', 
 /// Byte represeting a truncated log.
 const TRUCATED: u8 = b'@';
 
-/// Maximum number of digits for a U64.
-const U64_DIGITS: usize = 20;
+/// An uninitialized byte.
+const UNINIT_BYTE: MaybeUninit<u8> = MaybeUninit::uninit();
 
+/// Logger to efficiently format log messages.
+///
+/// The logger is a fixed size buffer that can be used to format log messages
+/// before sending them to the log output. Any type that implements the `Log`
+/// trait can be appended to the logger.
 pub struct Logger<const BUFFER: usize> {
     // Byte buffer to store the log message.
     buffer: [MaybeUninit<u8>; BUFFER],
@@ -29,7 +34,6 @@ pub struct Logger<const BUFFER: usize> {
 
 impl<const BUFFER: usize> Default for Logger<BUFFER> {
     fn default() -> Self {
-        const UNINIT_BYTE: MaybeUninit<u8> = MaybeUninit::uninit();
         Self {
             buffer: [UNINIT_BYTE; BUFFER],
             offset: 0,
@@ -48,6 +52,11 @@ impl<const BUFFER: usize> Deref for Logger<BUFFER> {
 impl<const BUFFER: usize> Logger<BUFFER> {
     #[inline(always)]
     pub fn append<T: Log>(&mut self, value: T) {
+        self.append_with_options(value);
+    }
+
+    #[inline(always)]
+    pub fn append_with_options<T: Log>(&mut self, value: T) {
         if self.is_full() {
             if BUFFER > 0 {
                 unsafe {
@@ -57,7 +66,7 @@ impl<const BUFFER: usize> Logger<BUFFER> {
                 }
             }
         } else {
-            self.offset += value.log(&mut self.buffer[self.offset..]);
+            self.offset += value.write(&mut self.buffer[self.offset..]);
         }
     }
 
@@ -107,70 +116,93 @@ pub fn log(message: &[u8]) {
 
 /// Trait to specify the log behavior for a type.
 pub trait Log {
-    fn log(&self, buffer: &mut [MaybeUninit<u8>]) -> usize;
+    fn write(&self, buffer: &mut [MaybeUninit<u8>]) -> usize;
 }
 
-impl Log for u64 {
-    fn log(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
-        if buffer.is_empty() {
-            return 0;
-        }
-
-        match *self {
-            // Handle zero as a special case.
-            0 => {
-                unsafe {
-                    buffer.get_unchecked_mut(0).write(*DIGITS.get_unchecked(0));
+/// Implement the log trait for the integer types.
+macro_rules! impl_log_for_integer {
+    ( $type:tt, $max_digits:literal ) => {
+        impl Log for $type {
+            fn write(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
+                if buffer.is_empty() {
+                    return 0;
                 }
-                1
-            }
-            mut value => {
-                const UNINIT_BYTE: MaybeUninit<u8> = MaybeUninit::uninit();
-                let mut digits = [UNINIT_BYTE; U64_DIGITS];
-                let mut offset = U64_DIGITS;
 
-                while value > 0 {
-                    let remainder = value % 10;
-                    value /= 10;
-                    offset -= 1;
+                match *self {
+                    // Handle zero as a special case.
+                    0 => {
+                        unsafe {
+                            buffer.get_unchecked_mut(0).write(*DIGITS.get_unchecked(0));
+                        }
+                        1
+                    }
+                    mut value => {
+                        let mut digits = [UNINIT_BYTE; $max_digits];
+                        let mut offset = $max_digits;
 
-                    unsafe {
-                        digits
-                            .get_unchecked_mut(offset)
-                            .write(*DIGITS.get_unchecked(remainder as usize));
+                        while value > 0 {
+                            let remainder = value % 10;
+                            value /= 10;
+                            offset -= 1;
+
+                            unsafe {
+                                digits
+                                    .get_unchecked_mut(offset)
+                                    .write(*DIGITS.get_unchecked(remainder as usize));
+                            }
+                        }
+
+                        // Number of available digits to write.
+                        let available = $max_digits - offset;
+                        // Size of the buffer.
+                        let length = buffer.len();
+
+                        // Determines if the value was truncated or not by calculating the
+                        // number of digits that can be written.
+                        let (overflow, written) = if available < length {
+                            (false, available)
+                        } else {
+                            (true, length)
+                        };
+
+                        unsafe {
+                            let ptr = buffer.as_mut_ptr();
+                            #[cfg(target_os = "solana")]
+                            sol_memcpy_(
+                                ptr as *mut _,
+                                digits[offset..].as_ptr() as *const _,
+                                length as u64,
+                            );
+                            #[cfg(not(target_os = "solana"))]
+                            core::ptr::copy_nonoverlapping(digits[offset..].as_ptr(), ptr, written);
+                        }
+
+                        // There might not have been space for all the value.
+                        if overflow {
+                            unsafe {
+                                let last = buffer.get_unchecked_mut(written - 1);
+                                last.write(TRUCATED);
+                            }
+                        }
+
+                        written
                     }
                 }
-
-                let length = core::cmp::min(buffer.len(), U64_DIGITS - offset);
-
-                unsafe {
-                    let ptr = buffer.as_mut_ptr();
-                    #[cfg(target_os = "solana")]
-                    sol_memcpy_(
-                        ptr as *mut _,
-                        digits[offset..].as_ptr() as *const _,
-                        length as u64,
-                    );
-                    #[cfg(not(target_os = "solana"))]
-                    core::ptr::copy_nonoverlapping(digits[offset..].as_ptr(), ptr, length);
-                }
-
-                // There might not have been space for all the value.
-                if length != U64_DIGITS {
-                    unsafe {
-                        let last = buffer.get_unchecked_mut(length - 1);
-                        last.write(TRUCATED);
-                    }
-                }
-
-                length
             }
         }
-    }
+    };
 }
 
+// Implement the log trait for the primitive integer types.
+impl_log_for_integer!(u8, 3);
+impl_log_for_integer!(u16, 5);
+impl_log_for_integer!(u32, 10);
+impl_log_for_integer!(u64, 20);
+impl_log_for_integer!(u128, 39);
+
+/// Implement the log trait for the &str type.
 impl Log for &str {
-    fn log(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
+    fn write(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
         let length = core::cmp::min(buffer.len(), self.len());
         let offset = &mut buffer[..length];
 
@@ -178,7 +210,7 @@ impl Log for &str {
             d.write(s);
         }
 
-        // There maight not have been space for all the value.
+        // There might not have been space for all the value.
         if length != self.len() {
             unsafe {
                 let last = buffer.get_unchecked_mut(length - 1);
@@ -187,5 +219,69 @@ impl Log for &str {
         }
 
         length
+    }
+}
+
+impl<T> Log for &[T]
+where
+    T: Log,
+{
+    fn write(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
+        let mut offset = 0;
+
+        for value in self.iter() {
+            offset += value.write(&mut buffer[offset..]);
+        }
+
+        offset
+    }
+}
+
+//macro_rules! impl_log_for_slice {
+impl<T, const N: usize> Log for &[T; N]
+where
+    T: Log,
+{
+    fn write(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
+        if buffer.is_empty() {
+            return 0;
+        }
+
+        // Size of the buffer.
+        let length = buffer.len();
+
+        unsafe {
+            buffer.get_unchecked_mut(0).write(b'[');
+        }
+
+        let mut offset = 1;
+
+        for value in self.iter() {
+            offset += value.write(&mut buffer[offset..]);
+
+            if offset < length {
+                unsafe {
+                    buffer.get_unchecked_mut(offset).write(b',');
+                }
+                offset += 1;
+            } else {
+                unsafe {
+                    buffer.get_unchecked_mut(offset - 1).write(TRUCATED);
+                }
+                // Stop writing the values if there is no more space.
+                break;
+            }
+        }
+
+        if offset < length {
+            unsafe {
+                // The last character is a comma, so we replace it with
+                // a closing bracket.
+                buffer.get_unchecked_mut(offset - 1).write(b']');
+            }
+            offset += 1;
+        }
+
+        offset
     }
 }

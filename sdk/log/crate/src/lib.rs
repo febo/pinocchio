@@ -19,7 +19,7 @@ mod tests {
         logger.clear();
 
         logger.append("balance=");
-        logger.append(1_000_000_000);
+        logger.append(1_000_000_000u64);
 
         assert!(&*logger == "balance=1000000000".as_bytes());
     }
@@ -35,8 +35,16 @@ mod tests {
         let mut logger = Logger::<12>::default();
 
         logger.append("balance=");
-        logger.append(1_000_000_000);
+        logger.append(1_000_000_000u64);
 
         assert!(&*logger == "balance=100@".as_bytes());
+    }
+
+    #[test]
+    fn test_logger_slice() {
+        let mut logger = Logger::<10>::default();
+        logger.append(&["Hello ", "world!"]);
+
+        assert!(&*logger == "[Hello ,w@".as_bytes());
     }
 }
