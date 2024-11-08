@@ -111,41 +111,42 @@ impl Log for u64 {
             return 0;
         }
 
-        let mut value = *self;
-        // Handle zero as a special case.
-        if value == 0 {
-            unsafe {
-                buffer.get_unchecked_mut(0).write(*DIGITS.get_unchecked(0));
-            }
-            1
-        } else {
-            let mut offset = 0;
-
-            while value > 0 && offset < buffer.len() {
-                let remainder = value % 10;
-                value /= 10;
-
+        match *self {
+            // Handle zero as a special case.
+            0 => {
                 unsafe {
-                    buffer
-                        .get_unchecked_mut(offset)
-                        .write(*DIGITS.get_unchecked(remainder as usize));
+                    buffer.get_unchecked_mut(0).write(*DIGITS.get_unchecked(0));
+                }
+                1
+            }
+            mut value => {
+                let mut offset = 0;
+
+                while value > 0 && offset < buffer.len() {
+                    let remainder = value % 10;
+                    value /= 10;
+
+                    unsafe {
+                        buffer
+                            .get_unchecked_mut(offset)
+                            .write(*DIGITS.get_unchecked(remainder as usize));
+                    }
+
+                    offset += 1;
+                }
+                // Reverse the slice to get the correct order.
+                buffer[0..offset].reverse();
+
+                // There might not have been space for all the value.
+                if value > 0 {
+                    unsafe {
+                        let last = buffer.get_unchecked_mut(offset - 1);
+                        last.write(TRUCATED);
+                    }
                 }
 
-                offset += 1;
+                offset
             }
-            // Reverse the slice to get the correct order.
-            buffer[0..offset].reverse();
-
-            // There might not have been space for all the value.
-            if value > 0 {
-                unsafe {
-                    let last = buffer.get_unchecked_mut(offset - 1);
-                    last.assume_init_drop();
-                    last.write(TRUCATED);
-                }
-            }
-
-            offset
         }
     }
 }
@@ -161,11 +162,9 @@ impl Log for &str {
 
         // There maight not have been space for all the value.
         if length != self.len() {
-            let last = length - 1;
             unsafe {
-                // Drop the previous value.
-                buffer[last].assume_init_drop();
-                buffer[last].write(TRUCATED);
+                let last = buffer.get_unchecked_mut(length - 1);
+                last.write(TRUCATED);
             }
         }
 
