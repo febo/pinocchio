@@ -116,6 +116,10 @@ pub fn log(message: &[u8]) {
 
 /// Trait to specify the log behavior for a type.
 pub trait Log {
+    fn debug(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
+        self.write(buffer)
+    }
+
     fn write(&self, buffer: &mut [MaybeUninit<u8>]) -> usize;
 }
 
@@ -202,6 +206,33 @@ impl_log_for_integer!(u128, 39);
 
 /// Implement the log trait for the &str type.
 impl Log for &str {
+    fn debug(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
+        if buffer.is_empty() {
+            return 0;
+        }
+
+        unsafe {
+            buffer.get_unchecked_mut(0).write(b'"');
+        }
+
+        let mut offset = 1;
+        offset += self.write(&mut buffer[offset..]);
+
+        match buffer.len() - offset {
+            0 => unsafe {
+                buffer.get_unchecked_mut(offset - 1).write(TRUCATED);
+            },
+            _ => {
+                unsafe {
+                    buffer.get_unchecked_mut(offset).write(b'"');
+                }
+                offset += 1;
+            }
+        }
+
+        offset
+    }
+
     fn write(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
         let length = core::cmp::min(buffer.len(), self.len());
         let offset = &mut buffer[..length];
@@ -257,27 +288,36 @@ where
         let mut offset = 1;
 
         for value in self.iter() {
-            offset += value.write(&mut buffer[offset..]);
-
-            if offset < length {
-                unsafe {
-                    buffer.get_unchecked_mut(offset).write(b',');
-                }
-                offset += 1;
-            } else {
+            if offset >= length {
                 unsafe {
                     buffer.get_unchecked_mut(offset - 1).write(TRUCATED);
                 }
-                // Stop writing the values if there is no more space.
+                offset = length;
                 break;
             }
+
+            if offset > 1 {
+                if offset + 2 >= length {
+                    unsafe {
+                        buffer.get_unchecked_mut(length - 1).write(TRUCATED);
+                    }
+                    offset = length;
+                    break;
+                } else {
+                    unsafe {
+                        buffer.get_unchecked_mut(offset).write(b',');
+                        buffer.get_unchecked_mut(offset + 1).write(b' ');
+                    }
+                    offset += 2;
+                }
+            }
+
+            offset += value.debug(&mut buffer[offset..]);
         }
 
         if offset < length {
             unsafe {
-                // The last character is a comma, so we replace it with
-                // a closing bracket.
-                buffer.get_unchecked_mut(offset - 1).write(b']');
+                buffer.get_unchecked_mut(offset).write(b']');
             }
             offset += 1;
         }

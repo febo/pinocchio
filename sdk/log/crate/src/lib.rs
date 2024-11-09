@@ -42,9 +42,27 @@ mod tests {
 
     #[test]
     fn test_logger_slice() {
-        let mut logger = Logger::<10>::default();
+        let mut logger = Logger::<20>::default();
         logger.append(&["Hello ", "world!"]);
 
-        assert!(&*logger == "[Hello ,w@".as_bytes());
+        assert!(&*logger == "[\"Hello \", \"world!\"]".as_bytes());
+
+        let mut logger = Logger::<20>::default();
+        logger.append(&[123u16, 456u16]);
+
+        assert!(&*logger == "[123, 456]".as_bytes());
+    }
+
+    #[test]
+    fn test_logger_truncated_slice() {
+        let mut logger = Logger::<5>::default();
+        logger.append(&["Hello ", "world!"]);
+
+        assert!(&*logger == "[\"He@".as_bytes());
+
+        let mut logger = Logger::<4>::default();
+        logger.append(&[123u16, 456u16]);
+
+        assert!(&*logger == "[12@".as_bytes());
     }
 }
