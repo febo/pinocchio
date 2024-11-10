@@ -1,0 +1,15 @@
+[package]
+name = "pinocchio-log-macro"
+description = "Macro for pinocchio log utility"
+version = "0.1.0"
+edition = { workspace = true }
+license = { workspace = true }
+readme = "./README.md"
+repository = { workspace = true }
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "^1.0"
+syn = { version = "^1.0", features = ["extra-traits", "full"] }

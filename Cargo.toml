@@ -1,6 +1,13 @@
 [workspace]
 resolver = "2"
-members = ["programs/system", "programs/token", "sdk/pinocchio", "sdk/pubkey"]
+members = [
+    "programs/system",
+    "programs/token",
+    "sdk/log/crate",
+    "sdk/log/macro",
+    "sdk/pinocchio",
+    "sdk/pubkey",
+]
 
 [workspace.package]
 edition = "2021"
