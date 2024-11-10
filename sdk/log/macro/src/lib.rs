@@ -62,6 +62,44 @@ impl Parse for LogArgs {
     }
 }
 
+/// Companion `log!` macro for `pinocchio-log`.
+///
+/// The macro automates the creation of a `Logger` object to log a message.
+/// It support a limited subset of the [`format!`](https://doc.rust-lang.org/std/fmt/) syntax.
+/// The macro parses the format string at compile time and generates the calls to a `Logger`
+/// object to generate the corresponding formatted message.
+///
+/// # Arguments
+///
+/// - `buffer_len`: The length of the buffer to use for the logger (default to `200`). This is an optional argument.
+/// - `format_string`: The literal string to log. This string can contain placeholders `{}` to be replaced by the arguments.
+/// - `args`: The arguments to replace the placeholders in the format string. The arguments must implement the `Log` trait.
+///
+/// # Examples
+///
+/// To output a simple message (static `str`):
+/// ```
+/// use pinocchio_log::log
+///
+/// log!("a simple log");
+/// ```
+///
+/// To ouput a formatted message:
+/// ```
+/// use pinocchio_log::log
+///
+/// let amount = 1_000_000_000;
+/// log!("transfer amount: {}", amount);
+/// ```
+///
+/// Since a `Logger` size is statically determined, messages are limited to `200` length by default. When logging larger
+/// messages, it is possible to increase the logger buffer:
+/// ```
+/// use pinocchio_log::log
+///
+/// let very_long_message = "...";
+/// log!(500, "message: {}", very_long_message);
+/// ```
 #[proc_macro]
 pub fn log(input: TokenStream) -> TokenStream {
     // Parse the input into a `LogArgs`.
@@ -147,6 +185,6 @@ pub fn log(input: TokenStream) -> TokenStream {
             }
         })
     } else {
-        TokenStream::from(quote! {log(#format_string.as_bytes());})
+        TokenStream::from(quote! {pinocchio_log::logger::log_message(#format_string.as_bytes());})
     }
 }

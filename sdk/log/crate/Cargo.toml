@@ -1,6 +1,6 @@
 [package]
 name = "pinocchio-log"
-description = "Efficient log utility for Solana programs"
+description = "Lightweight log utility for Solana programs"
 version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
@@ -8,7 +8,11 @@ readme = "./README.md"
 repository = "https://github.com/febo/pinocchio"
 
 [dependencies]
-pinocchio-log-macro = { version = "^0", path = "../macro" }
+pinocchio-log-macro = { version = "^0", path = "../macro", optional = true }
 
 [lints.rust]
 unexpected_cfgs = {level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
+
+[features]
+default = ["macro"]
+macro = ["dep:pinocchio-log-macro"]
