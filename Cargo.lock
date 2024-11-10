@@ -86,3 +86,11 @@ name = "unicode-ident"
 version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e91b56cd4cadaeb79bbf1a5645f6b4f8dc5bde8834ad5894a8db35fda9efa1fe"
+
+[[package]]
+name = "pinocchio-token"
+version = "0.2.0"
+dependencies = [
+ "pinocchio",
+ "pinocchio-pubkey",
+]
