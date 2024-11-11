@@ -41,8 +41,8 @@ impl<'a> Transfer<'a> {
         ];
 
         // Instruction data layout:
-        // -  [0]: instruction discriminator
-        // -  [1..9]: amount
+        // -  [0]: instruction discriminator (1 byte, u8)
+        // -  [1..9]: amount (8 bytes, u64)
         let mut instruction_data = [UNINIT_BYTE; 9];
 
         // Set discriminator as u8 at offset [0]

@@ -46,7 +46,7 @@ impl<'a> InitilizeMint<'a> {
         // -  [1]: decimals
         // -  [2..34]: mint_authority
         // -  [34]: freeze_authority presence flag
-        // -  [35..68]: freeze_authority
+        // -  [35..67]: freeze_authority
         let mut instruction_data = [UNINIT_BYTE; 67];
 
         // Set discriminator as u8 at offset [0]

@@ -54,7 +54,8 @@ impl<'a> SetAuthority<'a> {
         // instruction data
         // -  [0]: instruction discriminator
         // -  [1]: authority_type
-        // -  [2..35] new_authority
+        // -  [2]: new_authority flag
+        // -  [3..35] new_authority
         let mut instruction_data = [UNINIT_BYTE; 35];
 
         // Set discriminator as u8 at offset [0]

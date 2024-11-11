@@ -42,8 +42,8 @@ impl<'a> InitilizeAccount2<'a> {
         ];
 
         // instruction data
-        // -  [0]: instruction discriminator
-        // -  [1..33]: owner
+        // -  [0]: instruction discriminator (1 byte, u8)
+        // -  [1..33]: owner (32 bytes, Pubkey)
         let mut instruction_data = [UNINIT_BYTE; 33];
 
         // Set discriminator as u8 at offset [0]

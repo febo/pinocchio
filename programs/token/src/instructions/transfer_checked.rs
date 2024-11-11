@@ -47,9 +47,9 @@ impl<'a> TransferChecked<'a> {
         ];
 
         // Instruction data layout:
-        // -  [0]: instruction discriminator
-        // -  [1..9]: amount
-        // -  [9]: decimals
+        // -  [0]: instruction discriminator (1 byte, u8)
+        // -  [1..9]: amount (8 bytes, u64)
+        // -  [9]: decimals (1 byte, u8)
         let mut instruction_data = [UNINIT_BYTE; 10];
 
         // Set discriminator as u8 at offset [0]
