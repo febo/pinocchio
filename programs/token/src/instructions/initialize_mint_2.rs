@@ -1,5 +1,3 @@
-use core::slice::from_raw_parts;
-
 use pinocchio::{
     account_info::AccountInfo,
     instruction::{AccountMeta, Instruction, Signer},
@@ -8,7 +6,7 @@ use pinocchio::{
     ProgramResult,
 };
 
-use crate::{write_bytes, UNINIT_BYTE};
+use crate::{IxData, UNINIT_BYTE};
 
 /// Initialize a new mint.
 ///
@@ -41,26 +39,22 @@ impl<'a> InitilizeMint2<'a> {
         // -  [2..34]: mint_authority
         // -  [34..35]: freeze_authority presence flag
         // -  [35..67]: freeze_authority
-        let mut instruction_data = [UNINIT_BYTE; 67];
+        let mut ix_buffer = [UNINIT_BYTE; 67];
+        let mut ix_data = IxData::new(&mut ix_buffer);
 
         // Set discriminator as u8 at offset [0]
-        write_bytes(&mut instruction_data, &[20]);
+        ix_data.write_bytes(&[20]);
         // Set decimals as u8 at offset [1]
-        write_bytes(&mut instruction_data[1..2], &[self.decimals]);
+        ix_data.write_bytes(&[self.decimals]);
         // Set mint_authority as Pubkey at offset [2..34]
-        write_bytes(&mut instruction_data[2..34], self.mint_authority);
+        ix_data.write_bytes(self.mint_authority.as_ref());
         // Set COption & freeze_authority at offset [34..67]
-        if let Some(freeze_auth) = self.freeze_authority {
-            write_bytes(&mut instruction_data[34..35], &[1]);
-            write_bytes(&mut instruction_data[35..], freeze_auth);
-        } else {
-            write_bytes(&mut instruction_data[34..35], &[0]);
-        }
+        ix_data.write_optional_pubkey_bytes(self.freeze_authority);
 
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 67) },
+            data: ix_data.read_bytes(),
         };
 
         invoke_signed(&instruction, &[self.mint], signers)
