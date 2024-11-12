@@ -30,6 +30,8 @@ pub const DEFAULT_BURN_PERCENT: u8 = 50;
 /// added to an accounts data length when calculating [`Rent::minimum_balance`].
 pub const ACCOUNT_STORAGE_OVERHEAD: u64 = 128;
 
+const EXEMPTION_THRESHOLD_SCALE_FACTOR: u64 = 1_000_000_000;
+
 /// Rent sysvar data
 #[repr(C)]
 #[derive(Clone, Debug, Default)]
@@ -108,6 +110,80 @@ impl Rent {
     pub fn is_exempt(&self, lamports: u64, data_len: usize) -> bool {
         lamports >= self.minimum_balance(data_len)
     }
+
+    /// Calculates the minimum balance for rent exemption.
+    ///
+    /// # Arguments
+    ///
+    /// * `data_len` - The number of bytes in the account
+    ///
+    /// # Returns
+    ///
+    /// The minimum balance in lamports for rent exemption.
+    #[inline]
+    pub fn minimum_balance_scaled(&self, data_len: usize) -> u64 {
+        let bytes = data_len as u64;
+
+        (((ACCOUNT_STORAGE_OVERHEAD + bytes) * self.lamports_per_byte_year)
+            * self.exemption_threshold_scaled())
+            / EXEMPTION_THRESHOLD_SCALE_FACTOR
+    }
+
+    /// Determines if an account can be considered rent exempt.
+    ///
+    /// # Arguments
+    ///
+    /// * `lamports` - The balance of the account in lamports
+    /// * `data_len` - The size of the account in bytes
+    ///
+    /// # Returns
+    ///
+    /// `true`` if the account is rent exempt, `false`` otherwise.
+    #[inline]
+    pub fn is_exempt_scaled(&self, lamports: u64, data_len: usize) -> bool {
+        lamports.saturating_mul(EXEMPTION_THRESHOLD_SCALE_FACTOR)
+            >= self.minimum_balance_scaled(data_len)
+    }
+
+    /// Returns the exemption threshold scaled by `EXEMPTION_THRESHOLD_SCALE_FACTOR`.
+    fn exemption_threshold_scaled(&self) -> u64 {
+        let bits = self.exemption_threshold.to_bits();
+        // 11-bit exponent
+        let exponent = ((bits >> 52) & 0x7FF) as i32;
+        // Bias is 1023 for f64
+        let mut exponent_value = exponent - 1023;
+        // 52-bit significand (add implicit 1 at the beginning)
+        let significand_value: u64 = (bits & 0xFFFFFFFFFFFFF) | (1 << 52);
+
+        let mut scaled = 0;
+        let mut i = 1 << 52;
+        let mut mask = 0xFFFFFFFFFFFFFu64;
+
+        while exponent_value >= 0 {
+            if (significand_value & i) != 0 {
+                scaled += EXEMPTION_THRESHOLD_SCALE_FACTOR << exponent_value;
+            }
+            exponent_value -= 1;
+            i >>= 1;
+            mask >>= 1;
+        }
+
+        // reset the exponent value to be positive
+        exponent_value = 1;
+        // Move the mask back to the first bit after the decimal point.
+        mask <<= 1;
+
+        while significand_value & mask != 0 {
+            if (significand_value & i) != 0 {
+                scaled += EXEMPTION_THRESHOLD_SCALE_FACTOR / (1u64 << exponent_value);
+            }
+            exponent_value += 1;
+            i >>= 1;
+            mask >>= 1;
+        }
+
+        scaled
+    }
 }
 
 impl Sysvar for Rent {
@@ -138,5 +214,28 @@ impl RentDue {
             RentDue::Exempt => true,
             RentDue::Paying(_) => false,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::sysvars::rent::{
+        DEFAULT_BURN_PERCENT, DEFAULT_EXEMPTION_THRESHOLD, DEFAULT_LAMPORTS_PER_BYTE_YEAR,
+    };
+
+    #[test]
+    pub fn test_minimum_balance() {
+        let rent = super::Rent {
+            lamports_per_byte_year: DEFAULT_LAMPORTS_PER_BYTE_YEAR,
+            exemption_threshold: DEFAULT_EXEMPTION_THRESHOLD,
+            burn_percent: DEFAULT_BURN_PERCENT,
+        };
+
+        assert_eq!(rent.minimum_balance(0), rent.minimum_balance_scaled(0));
+        assert_eq!(rent.minimum_balance(100), rent.minimum_balance_scaled(100));
+        assert_eq!(
+            rent.minimum_balance(1000),
+            rent.minimum_balance_scaled(1000)
+        );
     }
 }
