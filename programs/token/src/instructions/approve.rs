@@ -1,5 +1,3 @@
-use core::slice::from_raw_parts;
-
 use pinocchio::{
     account_info::AccountInfo,
     instruction::{AccountMeta, Instruction, Signer},
@@ -7,7 +5,7 @@ use pinocchio::{
     ProgramResult,
 };
 
-use crate::{write_bytes, UNINIT_BYTE};
+use crate::{IxData, UNINIT_BYTE};
 
 /// Approves a delegate.
 ///
@@ -43,17 +41,19 @@ impl<'a> Approve<'a> {
         // Instruction data
         // -  [0]: instruction discriminator (1 byte, u8)
         // -  [1..9]: amount (8 bytes, u64)
-        let mut instruction_data = [UNINIT_BYTE; 9];
+        let mut ix_buffer = [UNINIT_BYTE; 9];
+        let mut ix_data = IxData::new(&mut ix_buffer);
 
         // Set discriminator as u8 at offset [0]
-        write_bytes(&mut instruction_data, &[4]);
+        ix_data.write_bytes(&[4]);
         // Set amount as u64 at offset [1..9]
-        write_bytes(&mut instruction_data[1..], &self.amount.to_le_bytes());
+        // write_bytes(&mut instruction_data[1..], &self.amount.to_le_bytes());
+        ix_data.write_bytes(&self.amount.to_le_bytes());
 
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 9) },
+            data: ix_data.read_bytes(),
         };
 
         invoke_signed(

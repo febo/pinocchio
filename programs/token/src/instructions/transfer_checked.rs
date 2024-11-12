@@ -1,5 +1,3 @@
-use core::slice::from_raw_parts;
-
 use pinocchio::{
     account_info::AccountInfo,
     instruction::{AccountMeta, Instruction, Signer},
@@ -7,7 +5,7 @@ use pinocchio::{
     ProgramResult,
 };
 
-use crate::{write_bytes, UNINIT_BYTE};
+use crate::{IxData, UNINIT_BYTE};
 
 /// Transfer Tokens from one Token Account to another.
 ///
@@ -53,16 +51,16 @@ impl<'a> TransferChecked<'a> {
         let mut instruction_data = [UNINIT_BYTE; 10];
 
         // Set discriminator as u8 at offset [0]
-        write_bytes(&mut instruction_data, &[12]);
+        ix_data.write_bytes(&[12]);
         // Set amount as u64 at offset [1..9]
-        write_bytes(&mut instruction_data[1..9], &self.amount.to_le_bytes());
+        ix_data.write_bytes(&self.amount.to_le_bytes());
         // Set decimals as u8 at offset [9]
-        write_bytes(&mut instruction_data[9..], &[self.decimals]);
+        ix_data.write_bytes(&[self.decimals]);
 
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 10) },
+            data: ix_data.read_bytes(),
         };
 
         invoke_signed(&instruction, &[self.from, self.to, self.authority], signers)
