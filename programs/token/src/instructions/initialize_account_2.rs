@@ -46,7 +46,6 @@ impl<'a> InitilizeAccount2<'a> {
 
         // Set discriminator as u8 at offset [0]
         ix_data.write_bytes(&[16]);
-
         // Set owner as [u8; 32] at offset [1..33]
         ix_data.write_bytes(self.owner.as_ref());
 
