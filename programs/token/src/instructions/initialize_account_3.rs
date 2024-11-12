@@ -39,7 +39,6 @@ impl<'a> InitilizeAccount3<'a> {
         // -  [0]: instruction discriminator
         // -  [1..33]: owner
         let mut ix_buffer = [UNINIT_BYTE; 33];
-
         let mut ix_data = IxData::new(&mut ix_buffer);
 
         // Set discriminator as u8 at offset [0]

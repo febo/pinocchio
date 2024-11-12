@@ -47,7 +47,6 @@ impl<'a> Approve<'a> {
         // Set discriminator as u8 at offset [0]
         ix_data.write_bytes(&[4]);
         // Set amount as u64 at offset [1..9]
-        // write_bytes(&mut instruction_data[1..], &self.amount.to_le_bytes());
         ix_data.write_bytes(&self.amount.to_le_bytes());
 
         let instruction = Instruction {

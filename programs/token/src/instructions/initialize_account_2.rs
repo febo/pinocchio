@@ -42,13 +42,11 @@ impl<'a> InitilizeAccount2<'a> {
         // instruction data
         // -  [0]: instruction discriminator
         // -  [1..33]: owner
-
         let mut ix_buffer = [UNINIT_BYTE; 33];
         let mut ix_data = IxData::new(&mut ix_buffer);
 
         // Set discriminator as u8 at offset [0]
         ix_data.write_bytes(&[16]);
-
         // Set owner as [u8; 32] at offset [1..33]
         ix_data.write_bytes(self.owner.as_ref());
 
