@@ -6,7 +6,7 @@ use pinocchio::{
     ProgramResult,
 };
 
-use crate::{IxData, UNINIT_BYTE};
+use crate::{FromOptPubkeyToOptBytes, IxData, UNINIT_BYTE};
 
 #[repr(u8)]
 #[derive(Clone, Copy)]
@@ -61,7 +61,7 @@ impl<'a> SetAuthority<'a> {
         // Set authority_type as u8 at offset [1]
         ix_data.write_bytes(&[self.authority_type as u8]);
         // Set new_authority as [u8; 32] at offset [2..35]
-        ix_data.write_optional_pubkey_bytes(self.new_authority);
+        ix_data.write_optional_bytes(self.new_authority.to_opt_slice());
 
         let instruction = Instruction {
             program_id: &crate::ID,

@@ -11,6 +11,17 @@ use pinocchio::pubkey::PUBKEY_BYTES;
 
 const UNINIT_BYTE: MaybeUninit<u8> = MaybeUninit::<u8>::uninit();
 
+pub trait FromOptPubkeyToOptBytes {
+    fn to_opt_slice(&self) -> Option<&[u8]>;
+}
+
+impl FromOptPubkeyToOptBytes for Option<&[u8; PUBKEY_BYTES]> {
+    #[inline(always)]
+    fn to_opt_slice(&self) -> Option<&[u8]> {
+        self.map(|pubkey| pubkey.as_ref())
+    }
+}
+
 pub struct IxData<'i> {
     pub bytes: &'i mut [MaybeUninit<u8>],
     pub current_size: usize,
@@ -45,7 +56,7 @@ impl<'i> IxData<'i> {
     }
 
     #[inline(always)]
-    pub fn write_optional_pubkey_bytes(&mut self, source: Option<&[u8; PUBKEY_BYTES]>) {
+    pub fn write_optional_bytes(&mut self, source: Option<&[u8]>) {
         if let Some(source) = source {
             self.write_bytes(&[1]);
             self.write_bytes(source);
@@ -62,18 +73,23 @@ impl<'i> IxData<'i> {
 
 #[cfg(test)]
 mod tests {
+    use crate::FromOptPubkeyToOptBytes;
 
     #[test]
     fn test_write_bytes() {
         let mut data = [crate::UNINIT_BYTE; 50];
+
         let mut ix_data = crate::IxData::new(&mut data);
+
         assert_eq!(ix_data.current_size, 0);
+
         assert_eq!(ix_data.capacity, 50);
+
         ix_data.write_bytes(&[1, 2, 3, 4]);
 
-        let optional_pubkey = Some(&[2; 32]);
+        let optional_pubkey: Option<&[u8; 32]> = Some(&[2; 32]);
 
-        ix_data.write_optional_pubkey_bytes(optional_pubkey);
+        ix_data.write_optional_bytes(optional_pubkey.to_opt_slice());
 
         assert!(ix_data.current_size == 37);
 

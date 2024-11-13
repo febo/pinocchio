@@ -6,7 +6,7 @@ use pinocchio::{
     ProgramResult,
 };
 
-use crate::{IxData, UNINIT_BYTE};
+use crate::{FromOptPubkeyToOptBytes, IxData, UNINIT_BYTE};
 
 /// Initialize a new mint.
 ///
@@ -54,7 +54,7 @@ impl<'a> InitilizeMint<'a> {
         // Set mint_authority as Pubkey at offset [2..34]
         ix_data.write_bytes(self.mint_authority.as_ref());
         // Set COption & freeze_authority at offset [34..67]
-        ix_data.write_optional_pubkey_bytes(self.freeze_authority);
+        ix_data.write_optional_bytes(self.freeze_authority.to_opt_slice());
 
         let instruction = Instruction {
             program_id: &crate::ID,
