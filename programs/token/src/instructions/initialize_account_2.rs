@@ -1,3 +1,5 @@
+use core::slice::from_raw_parts;
+
 use pinocchio::{
     account_info::AccountInfo,
     instruction::{AccountMeta, Instruction, Signer},
@@ -6,7 +8,7 @@ use pinocchio::{
     ProgramResult,
 };
 
-use crate::{IxData, UNINIT_BYTE};
+use crate::{write_bytes, UNINIT_BYTE};
 
 /// Initialize a new Token Account.
 ///
@@ -45,14 +47,14 @@ impl<'a> InitilizeAccount2<'a> {
         let mut instruction_data = [UNINIT_BYTE; 33];
 
         // Set discriminator as u8 at offset [0]
-        ix_data.write_bytes(&[16]);
+        write_bytes(&mut instruction_data, &[16]);
         // Set owner as [u8; 32] at offset [1..33]
-        ix_data.write_bytes(self.owner.as_ref());
+        write_bytes(&mut instruction_data[1..], self.owner);
 
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: ix_data.read_bytes(),
+            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 33) },
         };
 
         invoke_signed(

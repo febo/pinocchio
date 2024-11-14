@@ -1,3 +1,5 @@
+use core::slice::from_raw_parts;
+
 use pinocchio::{
     account_info::AccountInfo,
     instruction::{AccountMeta, Instruction, Signer},
@@ -6,7 +8,7 @@ use pinocchio::{
     ProgramResult,
 };
 
-use crate::{FromOptPubkeyToOptBytes, IxData, UNINIT_BYTE};
+use crate::{write_bytes, UNINIT_BYTE};
 
 #[repr(u8)]
 #[derive(Clone, Copy)]
@@ -57,16 +59,21 @@ impl<'a> SetAuthority<'a> {
         let mut instruction_data = [UNINIT_BYTE; 35];
 
         // Set discriminator as u8 at offset [0]
-        ix_data.write_bytes(&[6]);
+        write_bytes(&mut instruction_data, &[6]);
         // Set authority_type as u8 at offset [1]
-        ix_data.write_bytes(&[self.authority_type as u8]);
+        write_bytes(&mut instruction_data[1..2], &[self.authority_type as u8]);
         // Set new_authority as [u8; 32] at offset [2..35]
-        ix_data.write_optional_bytes(self.new_authority.to_opt_slice());
+        if let Some(new_authority) = self.new_authority {
+            write_bytes(&mut instruction_data[2..3], &[1]);
+            write_bytes(&mut instruction_data[3..], new_authority);
+        } else {
+            write_bytes(&mut instruction_data[2..3], &[0]);
+        }
 
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: ix_data.read_bytes(),
+            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 35) },
         };
 
         invoke_signed(&instruction, &[self.account, self.authority], signers)

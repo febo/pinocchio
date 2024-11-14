@@ -1,4 +1,6 @@
-use crate::{IxData, UNINIT_BYTE};
+use core::slice::from_raw_parts;
+
+use crate::{write_bytes, UNINIT_BYTE};
 use pinocchio::{
     account_info::AccountInfo,
     instruction::{AccountMeta, Instruction, Signer},
@@ -43,20 +45,19 @@ impl<'a> BurnChecked<'a> {
         // -  [0]: instruction discriminator (1 byte, u8)
         // -  [1..9]: amount (8 bytes, u64)
         // -  [9]: decimals (1 byte, u8)
-        let mut ix_buffer = [UNINIT_BYTE; 10];
-        let mut ix_data = IxData::new(&mut ix_buffer);
+        let mut instruction_data = [UNINIT_BYTE; 10];
 
         // Set discriminator as u8 at offset [0]
-        ix_data.write_bytes(&[15]);
+        write_bytes(&mut instruction_data, &[15]);
         // Set amount as u64 at offset [1..9]
-        ix_data.write_bytes(&self.amount.to_le_bytes());
+        write_bytes(&mut instruction_data[1..9], &self.amount.to_le_bytes());
         // Set decimals as u8 at offset [9]
-        ix_data.write_bytes(&[self.decimals]);
+        write_bytes(&mut instruction_data[9..], &[self.decimals]);
 
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: ix_data.read_bytes(),
+            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 10) },
         };
 
         invoke_signed(
