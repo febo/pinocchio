@@ -1,7 +1,4 @@
-use core::{
-    mem::{transmute, MaybeUninit},
-    slice::from_raw_parts,
-};
+use core::{mem::MaybeUninit, slice::from_raw_parts};
 
 use pinocchio::{
     account_info::{AccountInfo, Ref},
@@ -298,6 +295,155 @@ pub struct WithdrawWithheldTokensFromAccounts<'a> {
 }
 
 impl<'a> WithdrawWithheldTokensFromAccounts<'a> {
+    /// Invoke `WithdrawWithheldTokensFromAccounts` instruction.
+    /// this takes a generic const `ACCOUNTS_LEN` to specify the total number of accounts as source accounts length is dynamic.
+    #[inline(always)]
+    pub fn invoke<const ACCOUNTS_LEN: usize>(&self) -> ProgramResult {
+        if 3 + self.source_accounts.len() != ACCOUNTS_LEN {
+            return Err(ProgramError::Custom(1));
+        }
+
+        self.invoke_signed::<ACCOUNTS_LEN>(&[])
+    }
+
+    /// Invoke `WithdrawWithheldTokensFromAccounts` instruction with signers.
+    /// this takes a generic const `ACCOUNTS_LEN` to specify the total number of accounts as source accounts length is dynamic.
+    pub fn invoke_signed<const ACCOUNTS_LEN: usize>(&self, signers: &[Signer]) -> ProgramResult {
+        if 3 + self.source_accounts.len() != ACCOUNTS_LEN {
+            return Err(ProgramError::Custom(1));
+        }
+        // Account metads
+        const UNINIT_ACC_METAS: MaybeUninit<AccountMeta> = MaybeUninit::<AccountMeta>::uninit();
+        let mut account_metas = [UNINIT_ACC_METAS; ACCOUNTS_LEN];
+
+        account_metas[0].write(AccountMeta::writable(self.mint.key()));
+        account_metas[1].write(AccountMeta::writable(self.fee_receiver.key()));
+        account_metas[2].write(AccountMeta::readonly_signer(
+            self.withdraw_withheld_authority.key(),
+        ));
+
+        for (i, account) in self.source_accounts.iter().enumerate() {
+            account_metas[3 + i].write(AccountMeta::writable(account.key()));
+        }
+
+        // Instruction data layout:
+        // -  [0]: instruction discriminator
+        let instruction_data = [30];
+
+        let acc_metas = unsafe {
+            core::slice::from_raw_parts(account_metas.as_ptr() as *const AccountMeta, ACCOUNTS_LEN)
+        };
+
+        let instruction = Instruction {
+            program_id: &crate::ID,
+            accounts: acc_metas,
+            data: &instruction_data,
+        };
+
+        const UNINIT_ACC_INFOS: MaybeUninit<&AccountInfo> = MaybeUninit::<&AccountInfo>::uninit();
+
+        let mut accounts = [UNINIT_ACC_INFOS; ACCOUNTS_LEN];
+
+        accounts[0].write(self.mint);
+        accounts[1].write(self.fee_receiver);
+        accounts[2].write(self.withdraw_withheld_authority);
+
+        for (i, account) in self.source_accounts.iter().enumerate() {
+            accounts[3 + i].write(account);
+        }
+
+        let acc_infos: [&AccountInfo; ACCOUNTS_LEN] = unsafe {
+            core::slice::from_raw_parts(accounts.as_ptr() as *const &AccountInfo, ACCOUNTS_LEN)
+                .try_into()
+                .unwrap() // this is safe as we know the length of the array
+        };
+
+        invoke_signed(&instruction, &acc_infos, signers)
+    }
+}
+
+pub struct HarvestWithheldTokensToMint<'a> {
+    /// Mint account (must include the `TransferFeeConfig` extension)
+    mint: &'a AccountInfo,
+    /// The source accounts to harvest from.
+    source_accounts: &'a [AccountInfo],
+}
+
+impl<'a> HarvestWithheldTokensToMint<'a> {
+    /// Invoke `HarvestWithheldTokensToMint` instruction.
+    /// this takes a generic const `ACCOUNTS_LEN` to specify the total number of accounts as source accounts length is dynamic.
+    #[inline(always)]
+    pub fn invoke<const ACCOUNTS_LEN: usize>(&self) -> ProgramResult {
+        if 1 + self.source_accounts.len() != ACCOUNTS_LEN {
+            return Err(ProgramError::Custom(1));
+        }
+        self.invoke_signed::<ACCOUNTS_LEN>(&[])
+    }
+
+    /// Invoke `HarvestWithheldTokensToMint` instruction with signers.
+    /// this takes a generic const `ACCOUNTS_LEN` to specify the total number of accounts as source accounts length is dynamic.
+    pub fn invoke_signed<const ACCOUNTS_LEN: usize>(&self, signers: &[Signer]) -> ProgramResult {
+        if 1 + self.source_accounts.len() != ACCOUNTS_LEN {
+            return Err(ProgramError::Custom(1));
+        }
+
+        // Account metads
+        const UNINIT_ACC_METAS: MaybeUninit<AccountMeta> = MaybeUninit::<AccountMeta>::uninit();
+        let mut account_metas = [UNINIT_ACC_METAS; ACCOUNTS_LEN];
+
+        account_metas[0].write(AccountMeta::writable(self.mint.key()));
+
+        for (i, account) in self.source_accounts.iter().enumerate() {
+            account_metas[1 + i].write(AccountMeta::writable(account.key()));
+        }
+
+        // Instruction data layout:
+        // -  [0]: instruction discriminator
+        let instruction_data = [31];
+
+        let acc_metas = unsafe {
+            core::slice::from_raw_parts(account_metas.as_ptr() as *const AccountMeta, ACCOUNTS_LEN)
+        };
+
+        let instruction = Instruction {
+            program_id: &crate::ID,
+            accounts: acc_metas,
+            data: &instruction_data,
+        };
+
+        const UNINIT_ACC_INFOS: MaybeUninit<&AccountInfo> = MaybeUninit::<&AccountInfo>::uninit();
+
+        let mut accounts = [UNINIT_ACC_INFOS; ACCOUNTS_LEN];
+
+        accounts[0].write(self.mint);
+
+        for (i, account) in self.source_accounts.iter().enumerate() {
+            accounts[1 + i].write(account);
+        }
+
+        let acc_infos: [&AccountInfo; ACCOUNTS_LEN] = unsafe {
+            core::slice::from_raw_parts(accounts.as_ptr() as *const &AccountInfo, ACCOUNTS_LEN)
+                .try_into()
+                .unwrap() // this is safe as we know the length of the array
+        };
+
+        invoke_signed(&instruction, &acc_infos, signers)
+    }
+}
+
+pub struct SetTransferFee<'a> {
+    /// Mint account
+    pub mint: &'a AccountInfo,
+    /// The mint's fee account owner.
+    pub mint_fee_acc_owner: &'a AccountInfo,
+    /// Amount of transfer collected as fees, expressed as basis points of
+    /// the transfer amount
+    pub transfer_fee_basis_points: u16,
+    /// Maximum fee assessed on transfers
+    pub maximum_fee: u64,
+}
+
+impl<'a> SetTransferFee<'a> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
@@ -305,49 +451,36 @@ impl<'a> WithdrawWithheldTokensFromAccounts<'a> {
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
         // Account metadata
-        // let mut account_metas =
-        //     unsafe { MaybeUninit::<[AccountMeta; MAX_ACCOUNTS_FOR_WITHDRAW + 3]>::uninit() };
+        let account_metas: [AccountMeta; 2] = [
+            AccountMeta::writable(self.mint.key()),
+            AccountMeta::readonly(self.mint_fee_acc_owner.key()),
+        ];
 
-        let account_metas = {
-            let mut data = [const { MaybeUninit::uninit() }; MAX_ACCOUNTS_FOR_WITHDRAW + 3];
-
-            data[0] = MaybeUninit::new(AccountMeta::writable(self.mint.key()));
-
-            data[1] = MaybeUninit::new(AccountMeta::writable(self.fee_receiver.key()));
-            data[2] = MaybeUninit::new(AccountMeta::readonly_signer(
-                self.withdraw_withheld_authority.key(),
-            ));
-
-            for (i, account) in self.source_accounts.iter().enumerate() {
-                data[i] = MaybeUninit::new(AccountMeta::writable(account.key()));
-            }
-
-            unsafe { transmute::<_, [AccountMeta; MAX_ACCOUNTS_FOR_WITHDRAW + 3]>(data) }
-        };
         // Instruction data layout:
-        // -  [0]: instruction discriminator
-        let instruction_data = [30];
+        // -  [0]: instruction discriminator (1 byte, u8)
+        // -  [1..3]: transfer_fee_basis_points (2 bytes, u16)
+        // -  [3..11]: maximum_fee (8 bytes, u64)
+        let mut instruction_data = [UNINIT_BYTE; 11];
+
+        // Set discriminator as u8 at offset [0]
+        write_bytes(&mut instruction_data, &[32]);
+        // Set transfer_fee_basis_points as u16 at offset [1..3]
+        write_bytes(
+            &mut instruction_data[1..3],
+            &self.transfer_fee_basis_points.to_le_bytes(),
+        );
+        // Set maximum_fee as u64 at offset [3..11]
+        write_bytes(
+            &mut instruction_data[3..11],
+            &self.maximum_fee.to_le_bytes(),
+        );
 
         let instruction = Instruction {
             program_id: &crate::ID,
             accounts: &account_metas,
-            data: &instruction_data,
+            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 11) },
         };
 
-        let accounts = {
-            let mut accounts = [MaybeUninit::uninit(); MAX_ACCOUNTS_FOR_WITHDRAW + 3];
-
-            accounts[0] = MaybeUninit::new(self.mint);
-            accounts[1] = MaybeUninit::new(self.fee_receiver);
-            accounts[2] = MaybeUninit::new(self.withdraw_withheld_authority);
-
-            for (i, account) in self.source_accounts.iter().enumerate() {
-                accounts[3 + i] = MaybeUninit::new(account);
-            }
-
-            unsafe { transmute::<_, [&AccountInfo; MAX_ACCOUNTS_FOR_WITHDRAW + 3]>(accounts) }
-        };
-
-        invoke_signed(&instruction, &accounts, signers)
+        invoke_signed(&instruction, &[self.mint, self.mint_fee_acc_owner], signers)
     }
 }
