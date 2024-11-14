@@ -1,4 +1,7 @@
-use core::slice::from_raw_parts;
+use core::{
+    mem::{transmute, MaybeUninit},
+    slice::from_raw_parts,
+};
 
 use pinocchio::{
     account_info::{AccountInfo, Ref},
@@ -10,6 +13,8 @@ use pinocchio::{
 };
 
 use crate::{write_bytes, ID, UNINIT_BYTE};
+
+pub const MAX_ACCOUNTS_FOR_WITHDRAW: usize = 10;
 
 /// State
 
@@ -123,14 +128,14 @@ impl<'a> InitializeTransferFeeConfig<'a> {
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
         // Instruction data layout:
-        // -  [0]: instruction discriminator
-        // -  [1..33]: mint
-        // -  [33]: transfer_fee_config_authority_flag
-        // -  [34..66]: transfer_fee_config_authority
-        // -  [66]: withdraw_withheld_authority_flag
-        // -  [67..99]: withdraw_withheld_authority
-        // -  [99..101]: transfer_fee_basis_points
-        // -  [101..109]: maximum_fee
+        // -  [0]: instruction discriminator (1 byte, u8)
+        // -  [1..33]: mint (32 bytes, Pubkey)
+        // -  [33]: transfer_fee_config_authority_flag (1 byte, u8)
+        // -  [34..66]: transfer_fee_config_authority (32 bytes, Pubkey)
+        // -  [66]: withdraw_withheld_authority_flag (1 byte, u8)
+        // -  [67..99]: withdraw_withheld_authority (32 bytes, Pubkey)
+        // -  [99..101]: transfer_fee_basis_points (2 bytes, u16)
+        // -  [101..109]: maximum_fee (8 bytes, u64)
 
         let mut instruction_data = [UNINIT_BYTE; 109];
 
@@ -169,5 +174,180 @@ impl<'a> InitializeTransferFeeConfig<'a> {
         };
 
         invoke_signed(&instruction, &[self.mint], signers)
+    }
+}
+
+pub struct TransferCheckedWithFee<'a> {
+    /// Source account
+    pub source: &'a AccountInfo,
+    /// Token mint
+    pub mint: &'a AccountInfo,
+    /// Destination account
+    pub destination: &'a AccountInfo,
+    /// Transfer authority (owner or delegate)
+    pub authority: &'a AccountInfo,
+    /// The amount of tokens to transfer.
+    pub amount: u64,
+    /// Expected number of base 10 digits to the right of the decimal place.
+    pub decimals: u8,
+    /// Expected fee assessed on this transfer, calculated off-chain based
+    /// on the transfer_fee_basis_points and maximum_fee of the mint. May
+    /// be 0 for a mint without a configured transfer fee.
+    pub fee: u64,
+}
+
+impl<'a> TransferCheckedWithFee<'a> {
+    #[inline(always)]
+    pub fn invoke(&self) -> ProgramResult {
+        self.invoke_signed(&[])
+    }
+
+    pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
+        // Account metadata
+        let account_metas: [AccountMeta; 4] = [
+            AccountMeta::writable(self.source.key()),
+            AccountMeta::writable(self.mint.key()),
+            AccountMeta::writable(self.destination.key()),
+            AccountMeta::readonly_signer(self.authority.key()),
+        ];
+
+        // Instruction data layout:
+        // -  [0]: instruction discriminator (1 byte, u8)
+        // -  [1..9]: amount (8 bytes, u64)
+        // -  [9]: decimals (1 byte, u8)
+        // -  [10..18]: fee (8 bytes, u64)
+        let mut instruction_data = [UNINIT_BYTE; 18];
+
+        // Set discriminator as u8 at offset [0]
+        write_bytes(&mut instruction_data, &[28]);
+        // Set amount as u64 at offset [1..9]
+        write_bytes(&mut instruction_data[1..9], &self.amount.to_le_bytes());
+        // Set decimals as u8 at offset [9]
+        write_bytes(&mut instruction_data[9..10], &[self.decimals]);
+        // Set fee as u64 at offset [10..18]
+        write_bytes(&mut instruction_data[10..18], &self.fee.to_le_bytes());
+
+        let instruction = Instruction {
+            program_id: &crate::ID,
+            accounts: &account_metas,
+            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 18) },
+        };
+
+        invoke_signed(
+            &instruction,
+            &[self.source, self.mint, self.destination, self.authority],
+            signers,
+        )
+    }
+}
+
+pub struct WithdrawWithheldTokensFromMint<'a> {
+    /// Mint account (must include the `TransferFeeConfig` extension)
+    pub mint: &'a AccountInfo,
+    /// The fee receiver account (must include the `TransferFeeAmount` extension associated with the provided mint)
+    pub fee_receiver: &'a AccountInfo,
+    /// The mint's `withdraw_withheld_authority`.
+    pub withraw_withheld_authority: &'a AccountInfo,
+}
+
+impl<'a> WithdrawWithheldTokensFromMint<'a> {
+    #[inline(always)]
+    pub fn invoke(&self) -> ProgramResult {
+        self.invoke_signed(&[])
+    }
+
+    pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
+        // Account metadata
+        let account_metas: [AccountMeta; 3] = [
+            AccountMeta::writable(self.mint.key()),
+            AccountMeta::writable(self.fee_receiver.key()),
+            AccountMeta::readonly_signer(self.withraw_withheld_authority.key()),
+        ];
+
+        // Instruction data layout:
+        // -  [0]: instruction discriminator
+        let instruction_data = [29];
+
+        let instruction = Instruction {
+            program_id: &crate::ID,
+            accounts: &account_metas,
+            data: &instruction_data,
+        };
+
+        invoke_signed(
+            &instruction,
+            &[
+                self.mint,
+                self.fee_receiver,
+                self.withraw_withheld_authority,
+            ],
+            signers,
+        )
+    }
+}
+
+pub struct WithdrawWithheldTokensFromAccounts<'a> {
+    /// Mint account (must include the `TransferFeeConfig` extension)
+    pub mint: &'a AccountInfo,
+    /// The fee receiver account (must include the `TransferFeeAmount` extension associated with the provided mint)
+    pub fee_receiver: &'a AccountInfo,
+    /// The mint's `withdraw_withheld_authority`.
+    pub withdraw_withheld_authority: &'a AccountInfo,
+    /// The source accounts to withdraw from.
+    pub source_accounts: &'a [AccountInfo],
+}
+
+impl<'a> WithdrawWithheldTokensFromAccounts<'a> {
+    #[inline(always)]
+    pub fn invoke(&self) -> ProgramResult {
+        self.invoke_signed(&[])
+    }
+
+    pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
+        // Account metadata
+        // let mut account_metas =
+        //     unsafe { MaybeUninit::<[AccountMeta; MAX_ACCOUNTS_FOR_WITHDRAW + 3]>::uninit() };
+
+        let account_metas = {
+            let mut data = [const { MaybeUninit::uninit() }; MAX_ACCOUNTS_FOR_WITHDRAW + 3];
+
+            data[0] = MaybeUninit::new(AccountMeta::writable(self.mint.key()));
+
+            data[1] = MaybeUninit::new(AccountMeta::writable(self.fee_receiver.key()));
+            data[2] = MaybeUninit::new(AccountMeta::readonly_signer(
+                self.withdraw_withheld_authority.key(),
+            ));
+
+            for (i, account) in self.source_accounts.iter().enumerate() {
+                data[i] = MaybeUninit::new(AccountMeta::writable(account.key()));
+            }
+
+            unsafe { transmute::<_, [AccountMeta; MAX_ACCOUNTS_FOR_WITHDRAW + 3]>(data) }
+        };
+        // Instruction data layout:
+        // -  [0]: instruction discriminator
+        let instruction_data = [30];
+
+        let instruction = Instruction {
+            program_id: &crate::ID,
+            accounts: &account_metas,
+            data: &instruction_data,
+        };
+
+        let accounts = {
+            let mut accounts = [MaybeUninit::uninit(); MAX_ACCOUNTS_FOR_WITHDRAW + 3];
+
+            accounts[0] = MaybeUninit::new(self.mint);
+            accounts[1] = MaybeUninit::new(self.fee_receiver);
+            accounts[2] = MaybeUninit::new(self.withdraw_withheld_authority);
+
+            for (i, account) in self.source_accounts.iter().enumerate() {
+                accounts[3 + i] = MaybeUninit::new(account);
+            }
+
+            unsafe { transmute::<_, [&AccountInfo; MAX_ACCOUNTS_FOR_WITHDRAW + 3]>(accounts) }
+        };
+
+        invoke_signed(&instruction, &accounts, signers)
     }
 }
