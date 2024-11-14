@@ -42,11 +42,11 @@ impl<'a> InitilizeMint<'a> {
         ];
 
         // Instruction data layout:
-        // -  [0]: instruction discriminator
-        // -  [1]: decimals
-        // -  [2..34]: mint_authority
-        // -  [34]: freeze_authority presence flag
-        // -  [35..68]: freeze_authority
+        // -  [0]: instruction discriminator (1 byte, u8)
+        // -  [1]: decimals (1 byte, u8)
+        // -  [2..34]: mint_authority (32 bytes, Pubkey)
+        // -  [34]: freeze_authority presence flag (1 byte, u8)
+        // -  [35..67]: freeze_authority (optional, 32 bytes, Pubkey)
         let mut instruction_data = [UNINIT_BYTE; 67];
 
         // Set discriminator as u8 at offset [0]
