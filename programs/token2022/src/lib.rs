@@ -10,6 +10,11 @@ use core::mem::MaybeUninit;
 
 const UNINIT_BYTE: MaybeUninit<u8> = MaybeUninit::<u8>::uninit();
 
+/// Deserialize a type from a byte array.
+///
+/// # Safety
+///
+/// This function is unsafe because it transmutes the input data to the output type.
 pub unsafe fn from_bytes<T: Clone + Copy>(data: &[u8]) -> T {
     assert_eq!(data.len(), core::mem::size_of::<T>());
     *(data.as_ptr() as *const T)

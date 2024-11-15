@@ -13,8 +13,7 @@ use crate::{write_bytes, ID, UNINIT_BYTE};
 
 pub const MAX_ACCOUNTS_FOR_WITHDRAW: usize = 10;
 
-/// State
-
+/// Transfer fee configuration
 #[repr(C)]
 pub struct TransferFee {
     /// First epoch where the transfer fee takes effect
@@ -25,6 +24,8 @@ pub struct TransferFee {
     /// transfer amount, ie. increments of 0.01%
     pub transfer_fee_basis_points: [u8; 8],
 }
+
+/// State
 
 #[repr(C)]
 pub struct TransferFeeConfig {
@@ -101,8 +102,9 @@ impl TransferFeeConfig {
     }
 }
 
-/// Instruction
+/// Instructions
 
+/// Initialize the transfer fee configuration for a mint.
 pub struct InitializeTransferFeeConfig<'a> {
     // Mint account
     pub mint: &'a AccountInfo,
@@ -174,6 +176,8 @@ impl<'a> InitializeTransferFeeConfig<'a> {
     }
 }
 
+/// Transfer tokens from one account to another, with a fee.
+
 pub struct TransferCheckedWithFee<'a> {
     /// Source account
     pub source: &'a AccountInfo,
@@ -238,6 +242,8 @@ impl<'a> TransferCheckedWithFee<'a> {
     }
 }
 
+/// Withdraw withheld tokens from the mint account.
+
 pub struct WithdrawWithheldTokensFromMint<'a> {
     /// Mint account (must include the `TransferFeeConfig` extension)
     pub mint: &'a AccountInfo,
@@ -283,7 +289,9 @@ impl<'a> WithdrawWithheldTokensFromMint<'a> {
     }
 }
 
-pub struct WithdrawWithheldTokensFromAccounts<'a> {
+/// Withdraw withheld tokens from the provided source accounts.
+
+pub struct WithdrawWithheldTokensFromAccounts<'a, const ACCOUNTS_LEN: usize> {
     /// Mint account (must include the `TransferFeeConfig` extension)
     pub mint: &'a AccountInfo,
     /// The fee receiver account (must include the `TransferFeeAmount` extension associated with the provided mint)
@@ -291,24 +299,20 @@ pub struct WithdrawWithheldTokensFromAccounts<'a> {
     /// The mint's `withdraw_withheld_authority`.
     pub withdraw_withheld_authority: &'a AccountInfo,
     /// The source accounts to withdraw from.
-    pub source_accounts: &'a [AccountInfo],
+    pub source_accounts: &'a [&'a AccountInfo],
 }
 
-impl<'a> WithdrawWithheldTokensFromAccounts<'a> {
-    /// Invoke `WithdrawWithheldTokensFromAccounts` instruction.
-    /// this takes a generic const `ACCOUNTS_LEN` to specify the total number of accounts as source accounts length is dynamic.
+impl<'a, const ACCOUNTS_LEN: usize> WithdrawWithheldTokensFromAccounts<'a, ACCOUNTS_LEN> {
     #[inline(always)]
-    pub fn invoke<const ACCOUNTS_LEN: usize>(&self) -> ProgramResult {
+    pub fn invoke(&self) -> ProgramResult {
         if 3 + self.source_accounts.len() != ACCOUNTS_LEN {
             return Err(ProgramError::Custom(1));
         }
 
-        self.invoke_signed::<ACCOUNTS_LEN>(&[])
+        self.invoke_signed(&[])
     }
 
-    /// Invoke `WithdrawWithheldTokensFromAccounts` instruction with signers.
-    /// this takes a generic const `ACCOUNTS_LEN` to specify the total number of accounts as source accounts length is dynamic.
-    pub fn invoke_signed<const ACCOUNTS_LEN: usize>(&self, signers: &[Signer]) -> ProgramResult {
+    pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
         if 3 + self.source_accounts.len() != ACCOUNTS_LEN {
             return Err(ProgramError::Custom(1));
         }
@@ -362,27 +366,24 @@ impl<'a> WithdrawWithheldTokensFromAccounts<'a> {
     }
 }
 
-pub struct HarvestWithheldTokensToMint<'a> {
+/// Harvest withheld tokens to mint accounts.
+pub struct HarvestWithheldTokensToMint<'a, const ACCOUNTS_LEN: usize> {
     /// Mint account (must include the `TransferFeeConfig` extension)
     mint: &'a AccountInfo,
     /// The source accounts to harvest from.
-    source_accounts: &'a [AccountInfo],
+    source_accounts: &'a [&'a AccountInfo],
 }
 
-impl<'a> HarvestWithheldTokensToMint<'a> {
-    /// Invoke `HarvestWithheldTokensToMint` instruction.
-    /// this takes a generic const `ACCOUNTS_LEN` to specify the total number of accounts as source accounts length is dynamic.
+impl<'a, const ACCOUNTS_LEN: usize> HarvestWithheldTokensToMint<'a, ACCOUNTS_LEN> {
     #[inline(always)]
-    pub fn invoke<const ACCOUNTS_LEN: usize>(&self) -> ProgramResult {
+    pub fn invoke(&self) -> ProgramResult {
         if 1 + self.source_accounts.len() != ACCOUNTS_LEN {
             return Err(ProgramError::Custom(1));
         }
-        self.invoke_signed::<ACCOUNTS_LEN>(&[])
+        self.invoke_signed(&[])
     }
 
-    /// Invoke `HarvestWithheldTokensToMint` instruction with signers.
-    /// this takes a generic const `ACCOUNTS_LEN` to specify the total number of accounts as source accounts length is dynamic.
-    pub fn invoke_signed<const ACCOUNTS_LEN: usize>(&self, signers: &[Signer]) -> ProgramResult {
+    pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
         if 1 + self.source_accounts.len() != ACCOUNTS_LEN {
             return Err(ProgramError::Custom(1));
         }
@@ -431,6 +432,7 @@ impl<'a> HarvestWithheldTokensToMint<'a> {
     }
 }
 
+/// Set the transfer fee configuration for a mint.
 pub struct SetTransferFee<'a> {
     /// Mint account
     pub mint: &'a AccountInfo,
