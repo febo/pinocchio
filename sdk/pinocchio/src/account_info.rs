@@ -381,12 +381,12 @@ impl AccountInfo {
     /// Zero out the the account's data_len, lamports and owner fields, effectively
     /// closing the account.
     ///
-    /// Note: This doesn't protect against future reinitialization of the account 
+    /// Note: This doesn't protect against future reinitialization of the account
     /// since the account_data will need to be zeroed out as well. Or if the attacker
     /// has access to the keypair of the account that we're trying to close, they can
     /// just add the lenght, lamports and owner back before the data is wiped out from
     /// the ledger.
-    /// 
+    ///
     /// Note: This works because the 48 bytes before the account data are:
     /// - 8 bytes for the data_len
     /// - 8 bytes for the lamports
@@ -408,12 +408,12 @@ impl AccountInfo {
     /// Zero out the the account's data_len, lamports and owner fields, effectively
     /// closing the account.
     ///
-    /// Note: This doesn't protect against future reinitialization of the account 
+    /// Note: This doesn't protect against future reinitialization of the account
     /// since the account_data will need to be zeroed out as well. Or if the attacker
     /// has access to the keypair of the account that we're trying to close, they can
     /// just add the lenght, lamports and owner back before the data is wiped out from
     /// the ledger.
-    /// 
+    ///
     /// Note: This works because the 48 bytes before the account data are:
     /// - 8 bytes for the data_len
     /// - 8 bytes for the lamports
@@ -425,7 +425,7 @@ impl AccountInfo {
     /// referenced by `AccountInfo` fields. It should only be called for
     /// instances of `AccountInfo` that were created by the runtime and received
     /// in the `process_instruction` entrypoint of a program.
-    /// 
+    ///
     /// This method set the variable as 0 making sure that we're actually zeroing out
     /// the bytes.
     #[inline(always)]
