@@ -378,6 +378,26 @@ impl AccountInfo {
         Ok(())
     }
 
+    /// Zero out the the account's data_len, lamports and owner fields, effectively
+    /// closing the account.
+    ///
+    /// Note: This doesn't protect against future reinitialization of the account 
+    /// since the account_data will need to be zeroed out as well. Or if the attacker
+    /// has access to the keypair of the account that we're trying to close, they can
+    /// just add the lenght, lamports and owner back before the data is wiped out from
+    /// the ledger.
+    /// 
+    /// Note: This works because the 48 bytes before the account data are:
+    /// - 8 bytes for the data_len
+    /// - 8 bytes for the lamports
+    /// - 32 bytes for the owner
+    ///
+    /// # Safety
+    ///
+    /// This method makes assumptions about the layout and location of memory
+    /// referenced by `AccountInfo` fields. It should only be called for
+    /// instances of `AccountInfo` that were created by the runtime and received
+    /// in the `process_instruction` entrypoint of a program.
     #[inline(always)]
     pub fn close(&self) {
         unsafe {
@@ -385,13 +405,31 @@ impl AccountInfo {
         }
     }
 
-    /// todo
+    /// Zero out the the account's data_len, lamports and owner fields, effectively
+    /// closing the account.
+    ///
+    /// Note: This doesn't protect against future reinitialization of the account 
+    /// since the account_data will need to be zeroed out as well. Or if the attacker
+    /// has access to the keypair of the account that we're trying to close, they can
+    /// just add the lenght, lamports and owner back before the data is wiped out from
+    /// the ledger.
+    /// 
+    /// Note: This works because the 48 bytes before the account data are:
+    /// - 8 bytes for the data_len
+    /// - 8 bytes for the lamports
+    /// - 32 bytes for the owner
     ///
     /// # Safety
     ///
-    /// todo
+    /// This method makes assumptions about the layout and location of memory
+    /// referenced by `AccountInfo` fields. It should only be called for
+    /// instances of `AccountInfo` that were created by the runtime and received
+    /// in the `process_instruction` entrypoint of a program.
+    /// 
+    /// This method set the variable as 0 making sure that we're actually zeroing out
+    /// the bytes.
     #[inline(always)]
-    pub unsafe fn based_close(&self) {
+    pub unsafe fn optimized_close(&self) {
         #[cfg(target_os = "solana")]
         unsafe {
             let var = 0u64;
