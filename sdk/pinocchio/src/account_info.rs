@@ -1,5 +1,4 @@
 //! Data structures to represent account information.
-
 use core::{marker::PhantomData, mem::ManuallyDrop, ptr::NonNull, slice::from_raw_parts_mut};
 
 use crate::{program_error::ProgramError, pubkey::Pubkey, syscalls::sol_memset_};
@@ -377,6 +376,37 @@ impl AccountInfo {
         }
 
         Ok(())
+    }
+
+    #[inline(always)]
+    pub fn close(&self) {
+        unsafe {
+            *(self.borrow_mut_data_unchecked().as_ptr().sub(48) as *mut [u8; 48]) = [0u8; 48];
+        }
+    }
+
+    /// todo
+    ///
+    /// # Safety
+    ///
+    /// todo
+    #[inline(always)]
+    pub unsafe fn based_close(&self) {
+        #[cfg(target_os = "solana")]
+        unsafe {
+            let var = 0u64;
+            core::arch::asm!(
+                "stxdw [{0}-8], {1}",
+                "stxdw [{0}-16], {1}",
+                "stxdw [{0}-24], {1}",
+                "stxdw [{0}-32], {1}",
+                "stxdw [{0}-40], {1}",
+                "stxdw [{0}-48], {1}",
+                in(reg) self.borrow_mut_data_unchecked().as_mut_ptr(),
+                in(reg) var,
+                options(nostack, preserves_flags)
+            );
+        }
     }
 
     /// Returns the memory address of the account data.
