@@ -15,7 +15,7 @@ use crate::{write_bytes, UNINIT_BYTE};
 /// ### Accounts:
 ///   0. `[WRITE]`  The account to initialize.
 ///   1. `[]` The mint this account will be associated with.
-pub struct InitilizeAccount3<'a> {
+pub struct InitializeAccount3<'a> {
     /// New Account.
     pub token: &'a AccountInfo,
     /// Mint Account.
@@ -24,7 +24,7 @@ pub struct InitilizeAccount3<'a> {
     pub owner: &'a Pubkey,
 }
 
-impl<'a> InitilizeAccount3<'a> {
+impl<'a> InitializeAccount3<'a> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])

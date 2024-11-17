@@ -12,7 +12,7 @@ use pinocchio::{
 ///   1. `[]` The mint this account will be associated with.
 ///   2. `[]` The new account's owner/multisignature.
 ///   3. `[]` Rent sysvar
-pub struct InitilizeAccount<'a> {
+pub struct InitializeAccount<'a> {
     /// New Account.
     pub token: &'a AccountInfo,
     /// Mint Account.
@@ -23,7 +23,7 @@ pub struct InitilizeAccount<'a> {
     pub rent_sysvar: &'a AccountInfo,
 }
 
-impl<'a> InitilizeAccount<'a> {
+impl<'a> InitializeAccount<'a> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
