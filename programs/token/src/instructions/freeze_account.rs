@@ -13,7 +13,7 @@ use pinocchio::{
 ///   2. `[SIGNER]` The mint freeze authority.
 pub struct FreezeAccount<'a> {
     /// Token Account to freeze.
-    pub token: &'a AccountInfo,
+    pub account: &'a AccountInfo,
     /// Mint Account.
     pub mint: &'a AccountInfo,
     /// Mint Freeze Authority Account
@@ -29,7 +29,7 @@ impl<'a> FreezeAccount<'a> {
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
         // account metadata
         let account_metas: [AccountMeta; 3] = [
-            AccountMeta::writable(self.token.key()),
+            AccountMeta::writable(self.account.key()),
             AccountMeta::readonly(self.mint.key()),
             AccountMeta::readonly_signer(self.freeze_authority.key()),
         ];
@@ -42,7 +42,7 @@ impl<'a> FreezeAccount<'a> {
 
         invoke_signed(
             &instruction,
-            &[self.token, self.mint, self.freeze_authority],
+            &[self.account, self.mint, self.freeze_authority],
             signers,
         )
     }

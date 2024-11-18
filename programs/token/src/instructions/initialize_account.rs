@@ -14,7 +14,7 @@ use pinocchio::{
 ///   3. `[]` Rent sysvar
 pub struct InitializeAccount<'a> {
     /// New Account.
-    pub token: &'a AccountInfo,
+    pub account: &'a AccountInfo,
     /// Mint Account.
     pub mint: &'a AccountInfo,
     /// Owner of the new Account.
@@ -32,7 +32,7 @@ impl<'a> InitializeAccount<'a> {
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
         // account metadata
         let account_metas: [AccountMeta; 4] = [
-            AccountMeta::writable(self.token.key()),
+            AccountMeta::writable(self.account.key()),
             AccountMeta::readonly(self.mint.key()),
             AccountMeta::readonly(self.owner.key()),
             AccountMeta::readonly(self.rent_sysvar.key()),
@@ -46,7 +46,7 @@ impl<'a> InitializeAccount<'a> {
 
         invoke_signed(
             &instruction,
-            &[self.token, self.mint, self.owner, self.rent_sysvar],
+            &[self.account, self.mint, self.owner, self.rent_sysvar],
             signers,
         )
     }

@@ -20,7 +20,7 @@ pub struct MintToChecked<'a> {
     /// Mint Account.
     pub mint: &'a AccountInfo,
     /// Token Account.
-    pub token: &'a AccountInfo,
+    pub account: &'a AccountInfo,
     /// Mint Authority
     pub mint_authority: &'a AccountInfo,
     /// Amount
@@ -39,7 +39,7 @@ impl<'a> MintToChecked<'a> {
         // account metadata
         let account_metas: [AccountMeta; 3] = [
             AccountMeta::writable(self.mint.key()),
-            AccountMeta::writable(self.token.key()),
+            AccountMeta::writable(self.account.key()),
             AccountMeta::readonly_signer(self.mint_authority.key()),
         ];
 
@@ -64,7 +64,7 @@ impl<'a> MintToChecked<'a> {
 
         invoke_signed(
             &instruction,
-            &[self.mint, self.token, self.mint_authority],
+            &[self.mint, self.account, self.mint_authority],
             signers,
         )
     }
