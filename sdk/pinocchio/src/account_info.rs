@@ -398,11 +398,21 @@ impl AccountInfo {
     /// referenced by `AccountInfo` fields. It should only be called for
     /// instances of `AccountInfo` that were created by the runtime and received
     /// in the `process_instruction` entrypoint of a program.
+    ///
+    /// This method is unsafe because it does not check if the account data is already
+    /// borrowed. It should only be called when the account is not being used.
     #[inline(always)]
-    pub fn close(&self) {
-        unsafe {
-            *(self.borrow_mut_data_unchecked().as_ptr().sub(48) as *mut [u8; 48]) = [0u8; 48];
-        }
+    pub unsafe fn close(&self) {
+        // Zero out the account owner. While the field is a `Pubkey`, it is quicker
+        // to zero the 32 bytes as 4 x `u64`s.
+        *(self.data_ptr().sub(48) as *mut u64) = 0u64;
+        *(self.data_ptr().sub(40) as *mut u64) = 0u64;
+        *(self.data_ptr().sub(32) as *mut u64) = 0u64;
+        *(self.data_ptr().sub(16) as *mut u64) = 0u64;
+        // Zero the account lamports.
+        (*self.raw).lamports = 0;
+        // Zero the account data length.
+        (*self.raw).data_len = 0;
     }
 
     /// Zero out the the account's data_len, lamports and owner fields, effectively
@@ -429,13 +439,17 @@ impl AccountInfo {
     /// This method set the variable as 0 making sure that we're actually zeroing out
     /// the bytes.
     #[inline(always)]
-    pub unsafe fn optimized_close(&self) {
+    pub unsafe fn assembly_close(&self) {
         #[cfg(target_os = "solana")]
         unsafe {
             let var = 0u64;
             core::arch::asm!(
+                // Zero the data lenght.
                 "stxdw [{0}-8], {1}",
+                // Zero the account lamports.
                 "stxdw [{0}-16], {1}",
+                // Zero out the account owner. While the field is a `Pubkey`, it is quicker
+                // to zero the 32 bytes as 4 x `u64`s.
                 "stxdw [{0}-24], {1}",
                 "stxdw [{0}-32], {1}",
                 "stxdw [{0}-40], {1}",
