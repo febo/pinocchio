@@ -17,7 +17,7 @@ use crate::{write_bytes, UNINIT_BYTE};
 ///   1. `[]` The mint this account will be associated with.
 pub struct InitializeAccount3<'a> {
     /// New Account.
-    pub token: &'a AccountInfo,
+    pub account: &'a AccountInfo,
     /// Mint Account.
     pub mint: &'a AccountInfo,
     /// Owner of the new Account.
@@ -33,7 +33,7 @@ impl<'a> InitializeAccount3<'a> {
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
         // account metadata
         let account_metas: [AccountMeta; 2] = [
-            AccountMeta::writable(self.token.key()),
+            AccountMeta::writable(self.account.key()),
             AccountMeta::readonly(self.mint.key()),
         ];
 
@@ -53,6 +53,6 @@ impl<'a> InitializeAccount3<'a> {
             data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 33) },
         };
 
-        invoke_signed(&instruction, &[self.token, self.mint], signers)
+        invoke_signed(&instruction, &[self.account, self.mint], signers)
     }
 }

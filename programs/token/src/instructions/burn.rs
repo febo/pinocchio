@@ -17,7 +17,7 @@ use crate::{write_bytes, UNINIT_BYTE};
 ///   2. `[SIGNER]` The account's owner/delegate.
 pub struct Burn<'a> {
     /// Source of the Burn Account
-    pub token: &'a AccountInfo,
+    pub account: &'a AccountInfo,
     /// Mint Account
     pub mint: &'a AccountInfo,
     /// Owner of the Token Account
@@ -35,7 +35,7 @@ impl<'a> Burn<'a> {
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
         // Account metadata
         let account_metas: [AccountMeta; 3] = [
-            AccountMeta::writable(self.token.key()),
+            AccountMeta::writable(self.account.key()),
             AccountMeta::writable(self.mint.key()),
             AccountMeta::readonly_signer(self.authority.key()),
         ];
@@ -58,7 +58,7 @@ impl<'a> Burn<'a> {
 
         invoke_signed(
             &instruction,
-            &[self.token, self.mint, self.authority],
+            &[self.account, self.mint, self.authority],
             signers,
         )
     }
