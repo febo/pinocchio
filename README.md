@@ -66,7 +66,7 @@ use pinocchio::{
   account_info::AccountInfo,
   entrypoint,
   msg,
-  ProgramResult
+  ProgramResult,
   pubkey::Pubkey
 };
 
