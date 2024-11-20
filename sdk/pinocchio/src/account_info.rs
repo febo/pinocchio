@@ -1,5 +1,4 @@
 //! Data structures to represent account information.
-
 use core::{marker::PhantomData, mem::ManuallyDrop, ptr::NonNull, slice::from_raw_parts_mut};
 
 use crate::{program_error::ProgramError, pubkey::Pubkey, syscalls::sol_memset_};
@@ -363,6 +362,7 @@ impl AccountInfo {
             data.value = NonNull::from(from_raw_parts_mut(data_ptr, new_len));
         }
 
+        #[cfg(target_os = "solana")]
         if zero_init {
             let len_increase = new_len.saturating_sub(current_len);
             if len_increase > 0 {
@@ -374,6 +374,11 @@ impl AccountInfo {
                     );
                 }
             }
+        }
+
+        #[cfg(not(target_os = "solana"))]
+        {
+            core::hint::black_box(zero_init);
         }
 
         Ok(())
