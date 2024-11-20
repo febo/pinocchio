@@ -1,8 +1,7 @@
 //! Data structures to represent account information.
-
 use core::{marker::PhantomData, mem::ManuallyDrop, ptr::NonNull, slice::from_raw_parts_mut};
 
-use crate::{program_error::ProgramError, pubkey::Pubkey, syscalls::sol_memset_};
+use crate::{program_error::ProgramError, pubkey::Pubkey, syscalls::sol_memset_, ProgramResult};
 
 /// Maximum number of bytes a program may add to an account during a
 /// single realloc.
@@ -377,6 +376,54 @@ impl AccountInfo {
         }
 
         Ok(())
+    }
+
+    /// Zero out the the account's data_len, lamports and owner fields, effectively
+    /// closing the account.
+    ///
+    /// This doesn't protect against future reinitialization of the account
+    /// since the account_data will need to be zeroed out as well. Or if the attacker
+    /// has access to the keypair of the account that we're trying to close, they can
+    /// just add the lenght, lamports and owner back before the data is wiped out from
+    /// the ledger.
+    ///
+    /// This works because the 48 bytes before the account data are:
+    /// - 8 bytes for the data_len
+    /// - 8 bytes for the lamports
+    /// - 32 bytes for the owner
+    pub fn close(&self) -> ProgramResult {
+        {
+            let _ = self.try_borrow_mut_data()?;
+        }
+
+        unsafe {
+            self.close_unchecked();
+        }
+
+        Ok(())
+    }
+    ///
+    /// # Safety
+    ///
+    /// This method makes assumptions about the layout and location of memory
+    /// referenced by `AccountInfo` fields. It should only be called for
+    /// instances of `AccountInfo` that were created by the runtime and received
+    /// in the `process_instruction` entrypoint of a program.
+    ///
+    /// This method is unsafe because it does not check if the account data is already
+    /// borrowed. It should only be called when the account is not being used.
+    #[inline(always)]
+    pub unsafe fn close_unchecked(&self) {
+        // Zero out the account owner. While the field is a `Pubkey`, it is quicker
+        // to zero the 32 bytes as 4 x `u64`s.
+        *(self.data_ptr().sub(48) as *mut u64) = 0u64;
+        *(self.data_ptr().sub(40) as *mut u64) = 0u64;
+        *(self.data_ptr().sub(32) as *mut u64) = 0u64;
+        *(self.data_ptr().sub(16) as *mut u64) = 0u64;
+        // Zero the account lamports.
+        (*self.raw).lamports = 0;
+        // Zero the account data length.
+        (*self.raw).data_len = 0;
     }
 
     /// Returns the memory address of the account data.
