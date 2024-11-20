@@ -1,7 +1,10 @@
 //! Data structures to represent account information.
 use core::{marker::PhantomData, mem::ManuallyDrop, ptr::NonNull, slice::from_raw_parts_mut};
 
-use crate::{program_error::ProgramError, pubkey::Pubkey, syscalls::sol_memset_, ProgramResult};
+#[cfg(target_os = "solana")]
+use crate::syscalls::sol_memset_;
+
+use crate::{program_error::ProgramError, pubkey::Pubkey, ProgramResult};
 
 /// Maximum number of bytes a program may add to an account during a
 /// single realloc.
@@ -366,11 +369,14 @@ impl AccountInfo {
             let len_increase = new_len.saturating_sub(current_len);
             if len_increase > 0 {
                 unsafe {
+                    #[cfg(target_os = "solana")]
                     sol_memset_(
                         &mut data[current_len..] as *mut _ as *mut u8,
                         0,
                         len_increase as u64,
                     );
+                    #[cfg(not(target_os = "solana"))]
+                    core::ptr::write_bytes(data.as_mut_ptr().add(current_len), 0, len_increase);
                 }
             }
         }
