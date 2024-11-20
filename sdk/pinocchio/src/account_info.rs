@@ -381,16 +381,6 @@ impl AccountInfo {
             }
         }
 
-        #[cfg(not(target_os = "solana"))]
-        if zero_init {
-            let len_increase = new_len.saturating_sub(current_len);
-            if len_increase > 0 {
-                unsafe {
-                    core::ptr::write_bytes(data.as_mut_ptr().add(current_len), 0, len_increase);
-                }
-            }
-        }
-
         Ok(())
     }
 
