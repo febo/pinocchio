@@ -313,7 +313,7 @@ impl AccountInfo {
     /// memory.
     ///
     /// Note:  Account data can be increased within a single call by up to
-    /// `solana_program::entrypoint::MAX_PERMITTED_DATA_INCREASE` bytes.
+    /// [`MAX_PERMITTED_DATA_INCREASE`] bytes.
     ///
     /// Note: Memory used to grow is already zero-initialized upon program
     /// entrypoint and re-zeroing it wastes compute units.  If within the same
@@ -384,21 +384,17 @@ impl AccountInfo {
         Ok(())
     }
 
-    /// Zero out the the account's data_len, lamports and owner fields, effectively
+    /// Zero out the the account's data length, lamports and owner fields, effectively
     /// closing the account.
     ///
     /// This doesn't protect against future reinitialization of the account
-    /// since the account_data will need to be zeroed out as well. Or if the attacker
-    /// has access to the keypair of the account that we're trying to close, they can
-    /// just add the lenght, lamports and owner back before the data is wiped out from
-    /// the ledger.
-    ///
-    /// This works because the 48 bytes before the account data are:
-    /// - 8 bytes for the data_len
-    /// - 8 bytes for the lamports
-    /// - 32 bytes for the owner
+    /// since the account data will need to be zeroed out as well; otherwise the lenght,
+    /// lamports and owner can be set again before the data is wiped out from
+    /// the ledger using the keypair of the account being close.
     pub fn close(&self) -> ProgramResult {
         {
+            // make sure the account is not borrowed since we are about to
+            // resize the data to zero
             let _ = self.try_borrow_mut_data()?;
         }
 
@@ -408,18 +404,33 @@ impl AccountInfo {
 
         Ok(())
     }
+
+    /// Zero out the the account's data length, lamports and owner fields, effectively
+    /// closing the account.
+    ///
+    /// This doesn't protect against future reinitialization of the account
+    /// since the account data will need to be zeroed out as well; otherwise the lenght,
+    /// lamports and owner can be set again before the data is wiped out from
+    /// the ledger using the keypair of the account being close.
     ///
     /// # Safety
     ///
-    /// This method makes assumptions about the layout and location of memory
+    /// This method is unsafe because it does not check if the account data is already
+    /// borrowed. It should only be called when the account is not being used.
+    ///
+    /// It also makes assumptions about the layout and location of memory
     /// referenced by `AccountInfo` fields. It should only be called for
     /// instances of `AccountInfo` that were created by the runtime and received
     /// in the `process_instruction` entrypoint of a program.
-    ///
-    /// This method is unsafe because it does not check if the account data is already
-    /// borrowed. It should only be called when the account is not being used.
     #[inline(always)]
     pub unsafe fn close_unchecked(&self) {
+        // We take advantage that the 48 bytes before the account data are:
+        // - 32 bytes for the owner
+        // - 8 bytes for the lamports
+        // - 8 bytes for the data_len
+        //
+        // So we can zero out them directly.
+
         // Zero out the account owner. While the field is a `Pubkey`, it is quicker
         // to zero the 32 bytes as 4 x `u64`s.
         *(self.data_ptr().sub(48) as *mut u64) = 0u64;
