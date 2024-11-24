@@ -172,3 +172,39 @@ impl RentDue {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::sysvars::rent::{
+        ACCOUNT_STORAGE_OVERHEAD, DEFAULT_BURN_PERCENT, DEFAULT_EXEMPTION_THRESHOLD,
+        DEFAULT_LAMPORTS_PER_BYTE_YEAR,
+    };
+
+    #[test]
+    pub fn test_minimum_balance() {
+        let mut rent = super::Rent {
+            lamports_per_byte_year: DEFAULT_LAMPORTS_PER_BYTE_YEAR,
+            exemption_threshold: DEFAULT_EXEMPTION_THRESHOLD,
+            burn_percent: DEFAULT_BURN_PERCENT,
+        };
+
+        // Using the default exemption threshold.
+
+        let balance = rent.minimum_balance(100);
+        let calculated = (((ACCOUNT_STORAGE_OVERHEAD + 100) * rent.lamports_per_byte_year) as f64
+            * rent.exemption_threshold) as u64;
+
+        assert!(calculated > 0);
+        assert_eq!(balance, calculated);
+
+        // Using a different exemption threshold.
+        rent.exemption_threshold = 0.5;
+
+        let balance = rent.minimum_balance(100);
+        let calculated = (((ACCOUNT_STORAGE_OVERHEAD + 100) * rent.lamports_per_byte_year) as f64
+            * rent.exemption_threshold) as u64;
+
+        assert!(calculated > 0);
+        assert_eq!(balance, calculated);
+    }
+}
