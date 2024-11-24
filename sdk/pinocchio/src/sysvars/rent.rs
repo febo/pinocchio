@@ -18,6 +18,15 @@ pub const DEFAULT_LAMPORTS_PER_BYTE_YEAR: u64 = 1_000_000_000 / 100 * 365 / (102
 /// account to be rent exempt.
 pub const DEFAULT_EXEMPTION_THRESHOLD: f64 = 2.0;
 
+/// Default amount of time (in years) the balance has to include rent for the
+/// account to be rent exempt as a `u64`.
+const DEFAULT_EXEMPTION_THRESHOLD_AS_U64: u64 = 2;
+
+/// The `u64` representation of the default exemption threshold.
+///
+/// This is used to check whether the `f64` value can be safely cast to a `u64`.
+const F64_EXEMPTION_THRESHOLD_AS_U64: u64 = 4611686018427387904;
+
 /// Default percentage of collected rent that is burned.
 ///
 /// Valid values are in the range [0, 100]. The remaining percentage is
@@ -59,12 +68,14 @@ impl Rent {
     ///
     /// The first value returned is the amount burned. The second is the amount
     /// to distribute to validators.
+    #[inline]
     pub fn calculate_burn(&self, rent_collected: u64) -> (u64, u64) {
         let burned_portion = (rent_collected * u64::from(self.burn_percent)) / 100;
         (burned_portion, rent_collected - burned_portion)
     }
 
     /// Rent due on account's data length with balance.
+    #[inline]
     pub fn due(&self, balance: u64, data_len: usize, years_elapsed: f64) -> RentDue {
         if self.is_exempt(balance, data_len) {
             RentDue::Exempt
@@ -74,6 +85,7 @@ impl Rent {
     }
 
     /// Rent due for account that is known to be not exempt.
+    #[inline]
     pub fn due_amount(&self, data_len: usize, years_elapsed: f64) -> u64 {
         let actual_data_len = data_len as u64 + ACCOUNT_STORAGE_OVERHEAD;
         let lamports_per_year = self.lamports_per_byte_year * actual_data_len;
@@ -82,6 +94,9 @@ impl Rent {
 
     /// Calculates the minimum balance for rent exemption.
     ///
+    /// This method avoids floating-point operations when the `exemption_threshold`
+    /// is the default value.
+    ///
     /// # Arguments
     ///
     /// * `data_len` - The number of bytes in the account
@@ -89,10 +104,17 @@ impl Rent {
     /// # Returns
     ///
     /// The minimum balance in lamports for rent exemption.
+    #[inline]
     pub fn minimum_balance(&self, data_len: usize) -> u64 {
         let bytes = data_len as u64;
-        (((ACCOUNT_STORAGE_OVERHEAD + bytes) * self.lamports_per_byte_year) as f64
-            * self.exemption_threshold) as u64
+
+        if self.is_default_rent_threshold() {
+            ((ACCOUNT_STORAGE_OVERHEAD + bytes) * self.lamports_per_byte_year)
+                * DEFAULT_EXEMPTION_THRESHOLD_AS_U64
+        } else {
+            (((ACCOUNT_STORAGE_OVERHEAD + bytes) * self.lamports_per_byte_year) as f64
+                * self.exemption_threshold) as u64
+        }
     }
 
     /// Determines if an account can be considered rent exempt.
@@ -105,8 +127,18 @@ impl Rent {
     /// # Returns
     ///
     /// `true`` if the account is rent exempt, `false`` otherwise.
+    #[inline]
     pub fn is_exempt(&self, lamports: u64, data_len: usize) -> bool {
         lamports >= self.minimum_balance(data_len)
+    }
+
+    /// Determines if the `exemption_threshold` is the default value.
+    ///
+    /// This is used to check whether the `f64` value can be safely cast to a `u64`
+    /// to avoid floating-point operations.
+    #[inline]
+    fn is_default_rent_threshold(&self) -> bool {
+        u64::from_le_bytes(self.exemption_threshold.to_le_bytes()) == F64_EXEMPTION_THRESHOLD_AS_U64
     }
 }
 
