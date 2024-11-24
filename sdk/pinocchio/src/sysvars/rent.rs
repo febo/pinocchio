@@ -53,17 +53,17 @@ pub struct Rent {
     pub burn_percent: u8,
 }
 
-/// Calculates the rent for a given number of bytes and duration
-///
-/// # Arguments
-///
-/// * `bytes` - The number of bytes to calculate rent for
-/// * `years` - The number of years to calculate rent for
-///
-/// # Returns
-///
-/// The total rent in lamports
 impl Rent {
+    /// Return a `Rent` from the given bytes.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that `bytes` contains a valid representation of `Rent`.
+    #[inline]
+    pub unsafe fn from_bytes(bytes: &[u8]) -> &Self {
+        &*(bytes.as_ptr() as *const Rent)
+    }
+
     /// Calculate how much rent to burn from the collected rent.
     ///
     /// The first value returned is the amount burned. The second is the amount
