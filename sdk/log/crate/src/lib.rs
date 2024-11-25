@@ -38,7 +38,7 @@ pub use pinocchio_log_macro::*;
 
 #[cfg(test)]
 mod tests {
-    use crate::logger::Logger;
+    use crate::logger::{Argument, Logger};
 
     #[test]
     fn test_logger() {
@@ -109,5 +109,28 @@ mod tests {
         logger.append(-200_000_000);
 
         assert!(&*logger == "-200@".as_bytes());
+    }
+
+    #[test]
+    fn test_logger_with_args() {
+        let mut logger = Logger::<10>::default();
+
+        logger.append_with_args(200_000_000u64, &[Argument::Precision(2)]);
+        assert!(&*logger == "2000000.00".as_bytes());
+
+        logger.clear();
+
+        logger.append_with_args(2_000_000_000u64, &[Argument::Precision(2)]);
+        assert!(&*logger == "20000000.@".as_bytes());
+
+        logger.clear();
+
+        logger.append_with_args(2_000_000_000u64, &[Argument::Precision(5)]);
+        assert!(&*logger == "20000.000@".as_bytes());
+
+        logger.clear();
+
+        logger.append_with_args(2_000_000_000u64, &[Argument::Precision(10)]);
+        assert!(&*logger == "0.2000000@".as_bytes());
     }
 }
