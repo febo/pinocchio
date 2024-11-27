@@ -182,35 +182,36 @@ macro_rules! impl_log_for_unsigned_integer {
                             }
                         }
 
-                        // Number of available digits to write.
-                        let original = $max_digits - offset;
-                        // Size of the buffer.
-                        let length = buffer.len();
-
-                        let (precision, available) = if args.is_empty() {
-                            (0, original)
+                        let precision = if args.is_empty() {
+                            0
                         } else {
                             // Since we only have a single variant for the Argument enum, we can
                             // safely unwrap the first element.
                             let Argument::Precision(p) = args[0];
-                            let precision = p as usize;
-
-                            let available = if precision > 0 {
-                                original
-                                    + if original <= precision {
-                                        // we need to add '0.' to the buffer.
-                                        2
-                                    } else {
-                                        // we need to add '.' to the buffer.
-                                        1
-                                    }
-                            } else {
-                                original
-                            };
-
-                            (precision, available)
+                            p as usize
                         };
 
+                        // Number of available digits to write.
+                        let mut available = $max_digits - offset;
+
+                        while precision >= available {
+                            available += 1;
+                            offset -= 1;
+
+                            unsafe {
+                                digits
+                                    .get_unchecked_mut(offset)
+                                    .write(*DIGITS.get_unchecked(0));
+                            }
+                        }
+
+                        if precision > 0 {
+                            // Space for the decimal point.
+                            available += 1;
+                        }
+
+                        // Size of the buffer.
+                        let length = buffer.len();
                         // Determines if the value was truncated or not by calculating the
                         // number of digits that can be written.
                         let (overflow, written, fraction) = if available <= length {
@@ -224,36 +225,47 @@ macro_rules! impl_log_for_unsigned_integer {
                             let ptr = buffer.as_mut_ptr();
 
                             #[cfg(target_os = "solana")]
-                            sol_memcpy_(ptr as *mut _, source as *const _, length as u64);
+                            {
+                                if precision == 0 {
+                                    sol_memcpy_(ptr as *mut _, source as *const _, length as u64);
+                                } else {
+                                    // Integer part of the number.
+                                    let integer_part = written - (fraction + 1);
+                                    sol_memcpy_(
+                                        ptr as *mut _,
+                                        source as *const _,
+                                        integer_part as u64,
+                                    );
+
+                                    // Decimal point.
+                                    (ptr.add(integer_part) as *mut u8).write(b'.');
+
+                                    // Fractional part of the number.
+                                    sol_memcpy_(
+                                        ptr.add(integer_part + 1) as *mut _,
+                                        source.add(integer_part) as *const _,
+                                        fraction as u64,
+                                    );
+                                }
+                            }
 
                             #[cfg(not(target_os = "solana"))]
                             {
                                 if precision == 0 {
-                                    core::ptr::copy_nonoverlapping(
-                                        digits[offset..].as_ptr(),
-                                        ptr,
-                                        written,
-                                    );
+                                    core::ptr::copy_nonoverlapping(source, ptr, written);
                                 } else {
                                     // Integer part of the number.
-                                    let (integer_part, remaining, offset) = if original <= precision
-                                    {
-                                        (ptr as *mut u8).write(b'0');
-                                        (1, original, offset)
-                                    } else {
-                                        let integer_part = written - (fraction + 1);
-                                        core::ptr::copy_nonoverlapping(source, ptr, integer_part);
-                                        (integer_part, fraction, offset + integer_part)
-                                    };
+                                    let integer_part = written - (fraction + 1);
+                                    core::ptr::copy_nonoverlapping(source, ptr, integer_part);
 
                                     // Decimal point.
                                     (ptr.add(integer_part) as *mut u8).write(b'.');
 
                                     // Fractional part of the number.
                                     core::ptr::copy_nonoverlapping(
-                                        digits[offset..].as_ptr(),
+                                        source.add(integer_part),
                                         ptr.add(integer_part + 1),
-                                        remaining,
+                                        fraction,
                                     );
                                 }
                             }
