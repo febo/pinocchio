@@ -43,8 +43,8 @@ macro_rules! msg {
     };
 }
 
-#[macro_export]
 #[cfg(feature = "std")]
+#[macro_export]
 macro_rules! msg {
     ($msg:expr) => {
         $crate::log::sol_log($msg)
@@ -98,7 +98,6 @@ pub fn sol_log_slice(slice: &[u8]) {
 ///
 /// - `accounts` - A slice of [`AccountInfo`].
 /// - `data` - The instruction data.
-#[cfg(feature = "std")]
 pub fn sol_log_params(accounts: &[AccountInfo], data: &[u8]) {
     for (i, account) in accounts.iter().enumerate() {
         msg!("AccountInfo");

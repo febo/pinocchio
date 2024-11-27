@@ -1,8 +1,6 @@
 //! Macros and functions for defining the program entrypoint and setting up
 //! global handlers.
 
-use core::{alloc::Layout, mem::size_of, ptr::null_mut, slice::from_raw_parts};
-
 use crate::{
     account_info::{Account, AccountInfo, MAX_PERMITTED_DATA_INCREASE},
     pubkey::Pubkey,
@@ -115,7 +113,7 @@ macro_rules! entrypoint {
             }
         }
 
-        $crate::custom_heap_default!();
+        $crate::custom_alloc_default!();
         $crate::custom_panic_default!();
     };
 }
@@ -192,7 +190,7 @@ pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
     let instruction_data_len = *(input.add(offset) as *const u64) as usize;
     offset += core::mem::size_of::<u64>();
 
-    let instruction_data = { from_raw_parts(input.add(offset), instruction_data_len) };
+    let instruction_data = { core::slice::from_raw_parts(input.add(offset), instruction_data_len) };
     offset += instruction_data_len;
 
     // program id
@@ -201,6 +199,7 @@ pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
     (program_id, processed, instruction_data)
 }
 
+#[cfg(feature = "std")]
 #[macro_export]
 macro_rules! custom_panic_default {
     () => {
@@ -209,61 +208,79 @@ macro_rules! custom_panic_default {
         #[no_mangle]
         fn custom_panic(info: &core::panic::PanicInfo<'_>) {
             // Panic reporting.
-            #[cfg(feature = "std")]
             $crate::msg!("{}", info);
+        }
+    };
+}
 
-            #[cfg(not(feature = "std"))]
-            $crate::msg!("panic occurred");
+#[cfg(not(feature = "std"))]
+#[macro_export]
+macro_rules! custom_panic_default {
+    () => {
+        /// Default panic handler.
+        #[cfg(all(not(feature = "custom-panic"), target_os = "solana"))]
+        #[no_mangle]
+        fn custom_panic(info: &core::panic::PanicInfo<'_>) {
+            if let Some(location) = info.location() {
+                $crate::log::sol_log("- File: ");
+                $crate::log::sol_log(location.file());
+            }
+            // Panic reporting.
+            $crate::log::sol_log("** PANICKED **");
         }
     };
 }
 
 #[macro_export]
-macro_rules! custom_heap_default {
+macro_rules! custom_alloc_default {
     () => {
-        #[cfg(all(not(feature = "custom-heap"), target_os = "solana"))]
-        extern crate alloc;
-
-        #[cfg(all(not(feature = "custom-heap"), target_os = "solana"))]
+        #[cfg(all(not(feature = "custom-alloc"), target_os = "solana"))]
         #[global_allocator]
-        static A: $crate::entrypoint::BumpAllocator = $crate::entrypoint::BumpAllocator {
-            start: $crate::entrypoint::HEAP_START_ADDRESS as usize,
-            len: $crate::entrypoint::HEAP_LENGTH,
-        };
+        static A: $crate::entrypoint::alloc::BumpAllocator =
+            $crate::entrypoint::alloc::BumpAllocator {
+                start: $crate::entrypoint::HEAP_START_ADDRESS as usize,
+                len: $crate::entrypoint::HEAP_LENGTH,
+            };
     };
 }
 
+#[cfg(all(not(feature = "custom-alloc"), target_os = "solana"))]
 /// The bump allocator used as the default rust heap when running programs.
-pub struct BumpAllocator {
-    pub start: usize,
-    pub len: usize,
-}
+pub mod alloc {
+    extern crate alloc;
 
-/// Integer arithmetic in this global allocator implementation is safe when
-/// operating on the prescribed `HEAP_START_ADDRESS` and `HEAP_LENGTH`. Any
-/// other use may overflow and is thus unsupported and at one's own risk.
-#[allow(clippy::arithmetic_side_effects)]
-unsafe impl core::alloc::GlobalAlloc for BumpAllocator {
-    /// Allocates memory as a bump allocator.
-    #[inline]
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        let pos_ptr = self.start as *mut usize;
-
-        let mut pos = *pos_ptr;
-        if pos == 0 {
-            // First time, set starting position.
-            pos = self.start + self.len;
-        }
-        pos = pos.saturating_sub(layout.size());
-        pos &= !(layout.align().wrapping_sub(1));
-        if pos < self.start + size_of::<*mut u8>() {
-            return null_mut();
-        }
-        *pos_ptr = pos;
-        pos as *mut u8
+    /// The bump allocator used as the default rust heap when running programs.
+    pub struct BumpAllocator {
+        pub start: usize,
+        pub len: usize,
     }
-    #[inline]
-    unsafe fn dealloc(&self, _: *mut u8, _: Layout) {
-        // I'm a bump allocator, I don't free
+
+    /// Integer arithmetic in this global allocator implementation is safe when
+    /// operating on the prescribed `HEAP_START_ADDRESS` and `HEAP_LENGTH`. Any
+    /// other use may overflow and is thus unsupported and at one's own risk.
+    #[allow(clippy::arithmetic_side_effects)]
+    unsafe impl alloc::alloc::GlobalAlloc for BumpAllocator {
+        /// Allocates memory as a bump allocator.
+        #[inline]
+        unsafe fn alloc(&self, layout: core::alloc::Layout) -> *mut u8 {
+            let pos_ptr = self.start as *mut usize;
+
+            let mut pos = *pos_ptr;
+            if pos == 0 {
+                // First time, set starting position.
+                pos = self.start + self.len;
+            }
+            pos = pos.saturating_sub(layout.size());
+            pos &= !(layout.align().wrapping_sub(1));
+            if pos < self.start + core::mem::size_of::<*mut u8>() {
+                return core::ptr::null_mut();
+            }
+            *pos_ptr = pos;
+            pos as *mut u8
+        }
+        #[inline]
+        unsafe fn dealloc(&self, _: *mut u8, _: core::alloc::Layout) {
+            // I'm a bump allocator, I don't free.
+        }
     }
 }
