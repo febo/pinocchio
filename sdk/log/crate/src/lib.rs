@@ -11,7 +11,7 @@
 //!
 //! # Example
 //!
-//! Creating a `Logger` with a buffer size of 100 bytes, and appending a string and an
+//! Creating a `Logger` with a buffer size of `100` bytes, and appending a string and an
 //! `u64` value:
 //!
 //! ```
@@ -28,6 +28,20 @@
 //! logger.append(&["Hello ", "world!"]);
 //! logger.log();
 //! ```
+//!
+//! It also support adding precision to numeric types:
+//!
+//! ```
+//! use pinocchio_log::logger::{Argument, Logger};
+//!
+//! let mut logger = Logger::<100>::default();
+//!
+//! let lamports = 1_000_000_000u64;
+//!
+//! logger.append("balance (SOL)=");
+//! logger.append_with_args(lamports, &[Argument::Precision(9)]);
+//! logger.log();
+//! ```
 
 #![no_std]
 
@@ -38,7 +52,7 @@ pub use pinocchio_log_macro::*;
 
 #[cfg(test)]
 mod tests {
-    use crate::logger::Logger;
+    use crate::logger::{Argument, Logger};
 
     #[test]
     fn test_logger() {
@@ -109,5 +123,48 @@ mod tests {
         logger.append(-200_000_000);
 
         assert!(&*logger == "-200@".as_bytes());
+    }
+
+    #[test]
+    fn test_logger_with_args() {
+        let mut logger = Logger::<10>::default();
+
+        logger.append_with_args(200_000_000u64, &[Argument::Precision(2)]);
+        assert!(&*logger == "2000000.00".as_bytes());
+
+        logger.clear();
+
+        logger.append_with_args(2_000_000_000u64, &[Argument::Precision(2)]);
+        assert!(&*logger == "20000000.@".as_bytes());
+
+        logger.clear();
+
+        logger.append_with_args(2_000_000_000u64, &[Argument::Precision(5)]);
+        assert!(&*logger == "20000.000@".as_bytes());
+
+        logger.clear();
+
+        logger.append_with_args(2_000_000_000u64, &[Argument::Precision(10)]);
+        assert!(&*logger == "0.2000000@".as_bytes());
+
+        logger.clear();
+
+        logger.append_with_args(2u64, &[Argument::Precision(6)]);
+        assert!(&*logger == "0.000002".as_bytes());
+
+        logger.clear();
+
+        logger.append_with_args(2u64, &[Argument::Precision(9)]);
+        assert!(&*logger == "0.0000000@".as_bytes());
+
+        logger.clear();
+
+        logger.append_with_args(-2000000i32, &[Argument::Precision(6)]);
+        assert!(&*logger == "-2.000000".as_bytes());
+
+        logger.clear();
+
+        logger.append_with_args(-2i64, &[Argument::Precision(9)]);
+        assert!(&*logger == "-0.000000@".as_bytes());
     }
 }

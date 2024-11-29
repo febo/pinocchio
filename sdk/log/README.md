@@ -14,17 +14,17 @@ It is known that Rust formatting routines are CPU-intensive for constrained envi
 
 While the cost related to (1) is *fixed*, in the sense that it does not change with the addition of formatting, it is possible to improve the overall cost of logging a formatted message using a lightweight formatting routine &mdash; this is what this crate does.
 
-This crate defines a lightweight `Logger` type to format log messages and a companion `log!` macro. The logger is a fixed size buffer that can be used to format log messages before sending them to the log output. Any type that implements the `Log` trait can be appended to the logger.
+This crate defines a lightweight `Logger` type to format log messages and a companion `log!` macro. The logger is a fixed size buffer that can be used to format log messages before sending them to the log output. Any type that implements the `Log` trait can be appended to the logger. Additionally, the logger can the dereferenced to a `&[u8]` slice, which can be used for other purposes &mdash; e.g., it can be used to create `&str` to be stored on an account or return data of programs.
 
 Below is a sample of the improvements observed when formatting log messages, measured in terms of compute units (CU):
 | Ouput message                      | `log!` | `msg!`       | Improvement (%) |
 |------------------------------------|--------|--------------|-----------------|
-| `"Hello world!"`                   | 103    | 103          | -               |
-| `"lamports={}"` + `u64`            | 374    | 627 (+253)   | 40%             |
-| `"{}"` + `[&str; 2]`               | 384    | 1648 (+1264) | 76%             |
-| `"{}"` + `[u64; 2]`                | 601    | 1060 (+459)  | 44%             |
-| `"lamports={}"` + `i64`            | 389    | 660 (+271)   | 41%             |
-| `"{}"` + `[u8; 32]` (pubkey bytes) | 3147   | 8401 (+5254) | 62%             |
+| `"Hello world!"`                   | 104    | 104          | -               |
+| `"lamports={}"` + `u64`            | 286    | 625 (+339)   | 55%             |
+| `"{}"` + `[&str; 2]`               | 119    | 1610 (+1491) | 93%             |
+| `"{}"` + `[u64; 2]`                | 483    | 1154 (+671)  | 49%             |
+| `"lamports={}"` + `i64`            | 299    | 659 (+360)   | 55%             |
+| `"{}"` + `[u8; 32]` (pubkey bytes) | 2783   | 8397 (+5614) | 67%             |
 
 > Note: The improvement in CU is accumulative, meaning that if you are logging multiple `u64` values, there will be a 40% improvement per formatted `u64` value.
 
@@ -70,6 +70,30 @@ use pinocchio_log::log
 let amount = 1_000_000_000;
 log!(100, "transfer amount: {}", amount);
 ```
+
+It is also possible to dereference the `Logger` into a `&[u8]` slice and use the result for other purposes:
+```rust
+use pinocchio_log::logger::Logger;
+
+let amount = 1_000_000_000;
+let mut logger = Logger::<100>::default();
+logger.append("Prize ");
+logger.append(amount);
+
+let prize_title = core::str::from_utf8(&logger)?;
+```
+
+When using the `Logger` directly, it is possible to include a precision formatting for number values:
+```rust
+use pinocchio_log::logger::{Attribute, Logger};
+
+let lamports = 1_000_000_000;
+let mut logger = Logger::<100>::default();
+logger.append("SOL: ");
+logger.append_with_args(amount, &[Argument::Precision(9)]);
+logger.log()
+```
+
 ## Limitations
 
 Currently the `log!` macro does not offer extra formatting options apart from the placeholder "`{}`" for argument values.

@@ -53,6 +53,12 @@ impl<const BUFFER: usize> Logger<BUFFER> {
     /// Append a value to the logger.
     #[inline(always)]
     pub fn append<T: Log>(&mut self, value: T) {
+        self.append_with_args(value, &[]);
+    }
+
+    /// Append a value to the logger with formatting arguments.
+    #[inline]
+    pub fn append_with_args<T: Log>(&mut self, value: T, args: &[Argument]) {
         if self.is_full() {
             if BUFFER > 0 {
                 unsafe {
@@ -61,7 +67,7 @@ impl<const BUFFER: usize> Logger<BUFFER> {
                 }
             }
         } else {
-            self.offset += value.write(&mut self.buffer[self.offset..]);
+            self.offset += value.write_with_args(&mut self.buffer[self.offset..], args);
         }
     }
 
@@ -102,6 +108,13 @@ impl<const BUFFER: usize> Logger<BUFFER> {
     }
 }
 
+/// Formatting arguments.
+#[non_exhaustive]
+pub enum Argument {
+    /// Number of decimal places to display for numbers.
+    Precision(u8),
+}
+
 /// Log a message.
 #[inline(always)]
 pub fn log_message(message: &[u8]) {
@@ -118,18 +131,30 @@ pub fn log_message(message: &[u8]) {
 
 /// Trait to specify the log behavior for a type.
 pub trait Log {
+    #[inline(always)]
     fn debug(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
-        self.write(buffer)
+        self.debug_with_args(buffer, &[])
     }
 
-    fn write(&self, buffer: &mut [MaybeUninit<u8>]) -> usize;
+    #[inline(always)]
+    fn debug_with_args(&self, buffer: &mut [MaybeUninit<u8>], args: &[Argument]) -> usize {
+        self.write_with_args(buffer, args)
+    }
+
+    #[inline(always)]
+    fn write(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
+        self.write_with_args(buffer, &[])
+    }
+
+    fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], parameters: &[Argument]) -> usize;
 }
 
 /// Implement the log trait for unsigned integer types.
 macro_rules! impl_log_for_unsigned_integer {
     ( $type:tt, $max_digits:literal ) => {
         impl Log for $type {
-            fn write(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
+            #[inline]
+            fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], args: &[Argument]) -> usize {
                 if buffer.is_empty() {
                     return 0;
                 }
@@ -158,29 +183,92 @@ macro_rules! impl_log_for_unsigned_integer {
                             }
                         }
 
+                        let precision = if args.is_empty() {
+                            0
+                        } else {
+                            // Since we only have a single variant for the Argument enum, we can
+                            // safely unwrap the first element.
+                            let Argument::Precision(p) = args[0];
+                            p as usize
+                        };
+
                         // Number of available digits to write.
-                        let available = $max_digits - offset;
+                        let mut available = $max_digits - offset;
+
+                        if precision > 0 {
+                            while precision >= available {
+                                available += 1;
+                                offset -= 1;
+
+                                unsafe {
+                                    digits
+                                        .get_unchecked_mut(offset)
+                                        .write(*DIGITS.get_unchecked(0));
+                                }
+                            }
+                            // Space for the decimal point.
+                            available += 1;
+                        }
+
                         // Size of the buffer.
                         let length = buffer.len();
-
                         // Determines if the value was truncated or not by calculating the
                         // number of digits that can be written.
-                        let (overflow, written) = if available <= length {
-                            (false, available)
+                        let (overflow, written, fraction) = if available <= length {
+                            (false, available, precision)
                         } else {
-                            (true, length)
+                            (true, length, precision.saturating_sub(available - length))
                         };
 
                         unsafe {
+                            let source = digits.as_ptr().add(offset);
                             let ptr = buffer.as_mut_ptr();
+
                             #[cfg(target_os = "solana")]
-                            sol_memcpy_(
-                                ptr as *mut _,
-                                digits[offset..].as_ptr() as *const _,
-                                length as u64,
-                            );
+                            {
+                                if precision == 0 {
+                                    sol_memcpy_(ptr as *mut _, source as *const _, written as u64);
+                                } else {
+                                    // Integer part of the number.
+                                    let integer_part = written - (fraction + 1);
+                                    sol_memcpy_(
+                                        ptr as *mut _,
+                                        source as *const _,
+                                        integer_part as u64,
+                                    );
+
+                                    // Decimal point.
+                                    (ptr.add(integer_part) as *mut u8).write(b'.');
+
+                                    // Fractional part of the number.
+                                    sol_memcpy_(
+                                        ptr.add(integer_part + 1) as *mut _,
+                                        source.add(integer_part) as *const _,
+                                        fraction as u64,
+                                    );
+                                }
+                            }
+
                             #[cfg(not(target_os = "solana"))]
-                            core::ptr::copy_nonoverlapping(digits[offset..].as_ptr(), ptr, written);
+                            {
+                                if precision == 0 {
+                                    core::ptr::copy_nonoverlapping(source, ptr, written);
+                                } else {
+                                    // Integer part of the number.
+                                    let integer_part = written - (fraction + 1);
+                                    core::ptr::copy_nonoverlapping(source, ptr, integer_part);
+
+                                    // Decimal point.
+                                    (ptr.add(integer_part) as *mut u8).write(b'.');
+
+                                    // Fractional part of the number.
+                                    core::ptr::copy_nonoverlapping(
+                                        source.add(integer_part),
+                                        ptr.add(integer_part + 1),
+                                        fraction,
+                                    );
+                                }
+                            }
                         }
 
                         // There might not have been space for all the value.
@@ -190,7 +278,6 @@ macro_rules! impl_log_for_unsigned_integer {
                                 last.write(TRUCATED);
                             }
                         }
-
                         written
                     }
                 }
@@ -208,9 +295,10 @@ impl_log_for_unsigned_integer!(u128, 39);
 
 /// Implement the log trait for the signed integer types.
 macro_rules! impl_log_for_signed {
-    ( $type:tt, $max_digits:literal ) => {
+    ( $type:tt, $unsigned_type:tt, $max_digits:literal ) => {
         impl Log for $type {
-            fn write(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
+            #[inline]
+            fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], args: &[Argument]) -> usize {
                 if buffer.is_empty() {
                     return 0;
                 }
@@ -234,55 +322,8 @@ macro_rules! impl_log_for_signed {
                             value = -value
                         };
 
-                        let mut digits = [UNINIT_BYTE; $max_digits];
-                        let mut offset = $max_digits;
-
-                        while value > 0 {
-                            let remainder = value % 10;
-                            value /= 10;
-                            offset -= 1;
-
-                            unsafe {
-                                digits
-                                    .get_unchecked_mut(offset)
-                                    .write(*DIGITS.get_unchecked(remainder as usize));
-                            }
-                        }
-
-                        // Number of available digits to write.
-                        let available = $max_digits - offset;
-                        // Size of the buffer.
-                        let length = buffer.len() - delta;
-
-                        // Determines if the value was truncated or not by calculating the
-                        // number of digits that can be written.
-                        let (overflow, written) = if available <= length {
-                            (false, available)
-                        } else {
-                            (true, length)
-                        };
-
-                        unsafe {
-                            let ptr = buffer[delta..].as_mut_ptr();
-                            #[cfg(target_os = "solana")]
-                            sol_memcpy_(
-                                ptr as *mut _,
-                                digits[offset..].as_ptr() as *const _,
-                                length as u64,
-                            );
-                            #[cfg(not(target_os = "solana"))]
-                            core::ptr::copy_nonoverlapping(digits[offset..].as_ptr(), ptr, written);
-                        }
-
-                        // There might not have been space for all the value.
-                        if overflow {
-                            unsafe {
-                                let last = buffer.get_unchecked_mut(written + delta - 1);
-                                last.write(TRUCATED);
-                            }
-                        }
-
-                        written + delta
+                        delta
+                            + (value as $unsigned_type).write_with_args(&mut buffer[delta..], args)
                     }
                 }
             }
@@ -291,15 +332,16 @@ macro_rules! impl_log_for_signed {
 }
 
 // Supported signed integer types.
-impl_log_for_signed!(i8, 3);
-impl_log_for_signed!(i16, 5);
-impl_log_for_signed!(i32, 10);
-impl_log_for_signed!(i64, 19);
-impl_log_for_signed!(i128, 39);
+impl_log_for_signed!(i8, u8, 3);
+impl_log_for_signed!(i16, u16, 5);
+impl_log_for_signed!(i32, u32, 10);
+impl_log_for_signed!(i64, u64, 19);
+impl_log_for_signed!(i128, u128, 39);
 
 /// Implement the log trait for the &str type.
 impl Log for &str {
-    fn debug(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
+    #[inline]
+    fn debug_with_args(&self, buffer: &mut [MaybeUninit<u8>], _args: &[Argument]) -> usize {
         if buffer.is_empty() {
             return 0;
         }
@@ -326,7 +368,8 @@ impl Log for &str {
         offset
     }
 
-    fn write(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
+    #[inline]
+    fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], _args: &[Argument]) -> usize {
         let length = core::cmp::min(buffer.len(), self.len());
         let offset = &mut buffer[..length];
 
@@ -365,7 +408,8 @@ macro_rules! impl_log_for_slice {
         }
     };
     ( @generate_write ) => {
-        fn write(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
+        #[inline]
+        fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], _args: &[Argument]) -> usize {
             if buffer.is_empty() {
                 return 0;
             }
@@ -382,7 +426,7 @@ macro_rules! impl_log_for_slice {
             for value in self.iter() {
                 if offset >= length {
                     unsafe {
-                        buffer.get_unchecked_mut(offset - 1).write(TRUCATED);
+                        buffer.get_unchecked_mut(length - 1).write(TRUCATED);
                     }
                     offset = length;
                     break;

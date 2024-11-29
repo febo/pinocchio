@@ -208,8 +208,12 @@ macro_rules! custom_panic_default {
         #[cfg(all(not(feature = "custom-panic"), target_os = "solana"))]
         #[no_mangle]
         fn custom_panic(info: &core::panic::PanicInfo<'_>) {
-            // Full panic reporting.
+            // Panic reporting.
+            #[cfg(feature = "std")]
             $crate::msg!("{}", info);
+
+            #[cfg(not(feature = "std"))]
+            $crate::msg!("panic occurred");
         }
     };
 }
