@@ -11,7 +11,7 @@
 //!
 //! # Example
 //!
-//! Creating a `Logger` with a buffer size of 100 bytes, and appending a string and an
+//! Creating a `Logger` with a buffer size of `100` bytes, and appending a string and an
 //! `u64` value:
 //!
 //! ```
@@ -26,6 +26,20 @@
 //! logger.clear();
 //!
 //! logger.append(&["Hello ", "world!"]);
+//! logger.log();
+//! ```
+//!
+//! It also support adding precision to numeric types:
+//!
+//! ```
+//! use pinocchio_log::logger::{Argument, Logger};
+//!
+//! let mut logger = Logger::<100>::default();
+//!
+//! let lamports = 1_000_000_000u64;
+//!
+//! logger.append("balance (SOL)=");
+//! logger.append(lamports, &[Argument::Precision(9)]);
 //! logger.log();
 //! ```
 
