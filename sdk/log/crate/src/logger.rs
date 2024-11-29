@@ -131,17 +131,17 @@ pub fn log_message(message: &[u8]) {
 
 /// Trait to specify the log behavior for a type.
 pub trait Log {
-    #[inline]
+    #[inline(always)]
     fn debug(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
         self.debug_with_args(buffer, &[])
     }
 
-    #[inline]
+    #[inline(always)]
     fn debug_with_args(&self, buffer: &mut [MaybeUninit<u8>], args: &[Argument]) -> usize {
         self.write_with_args(buffer, args)
     }
 
-    #[inline]
+    #[inline(always)]
     fn write(&self, buffer: &mut [MaybeUninit<u8>]) -> usize {
         self.write_with_args(buffer, &[])
     }
@@ -153,6 +153,7 @@ pub trait Log {
 macro_rules! impl_log_for_unsigned_integer {
     ( $type:tt, $max_digits:literal ) => {
         impl Log for $type {
+            #[inline]
             fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], args: &[Argument]) -> usize {
                 if buffer.is_empty() {
                     return 0;
@@ -194,18 +195,17 @@ macro_rules! impl_log_for_unsigned_integer {
                         // Number of available digits to write.
                         let mut available = $max_digits - offset;
 
-                        while precision >= available {
-                            available += 1;
-                            offset -= 1;
-
-                            unsafe {
-                                digits
-                                    .get_unchecked_mut(offset)
-                                    .write(*DIGITS.get_unchecked(0));
-                            }
-                        }
-
                         if precision > 0 {
+                            while precision >= available {
+                                available += 1;
+                                offset -= 1;
+
+                                unsafe {
+                                    digits
+                                        .get_unchecked_mut(offset)
+                                        .write(*DIGITS.get_unchecked(0));
+                                }
+                            }
                             // Space for the decimal point.
                             available += 1;
                         }
@@ -227,7 +227,7 @@ macro_rules! impl_log_for_unsigned_integer {
                             #[cfg(target_os = "solana")]
                             {
                                 if precision == 0 {
-                                    sol_memcpy_(ptr as *mut _, source as *const _, length as u64);
+                                    sol_memcpy_(ptr as *mut _, source as *const _, written as u64);
                                 } else {
                                     // Integer part of the number.
                                     let integer_part = written - (fraction + 1);
@@ -297,6 +297,7 @@ impl_log_for_unsigned_integer!(u128, 39);
 macro_rules! impl_log_for_signed {
     ( $type:tt, $unsigned_type:tt, $max_digits:literal ) => {
         impl Log for $type {
+            #[inline]
             fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], args: &[Argument]) -> usize {
                 if buffer.is_empty() {
                     return 0;
@@ -338,6 +339,7 @@ impl_log_for_signed!(i128, u128, 39);
 
 /// Implement the log trait for the &str type.
 impl Log for &str {
+    #[inline]
     fn debug_with_args(&self, buffer: &mut [MaybeUninit<u8>], _args: &[Argument]) -> usize {
         if buffer.is_empty() {
             return 0;
@@ -365,6 +367,7 @@ impl Log for &str {
         offset
     }
 
+    #[inline]
     fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], _args: &[Argument]) -> usize {
         let length = core::cmp::min(buffer.len(), self.len());
         let offset = &mut buffer[..length];
@@ -404,6 +407,7 @@ macro_rules! impl_log_for_slice {
         }
     };
     ( @generate_write ) => {
+        #[inline]
         fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], _args: &[Argument]) -> usize {
             if buffer.is_empty() {
                 return 0;
