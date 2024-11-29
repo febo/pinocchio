@@ -425,7 +425,7 @@ macro_rules! impl_log_for_slice {
             for value in self.iter() {
                 if offset >= length {
                     unsafe {
-                        buffer.get_unchecked_mut(offset - 1).write(TRUCATED);
+                        buffer.get_unchecked_mut(length - 1).write(TRUCATED);
                     }
                     offset = length;
                     break;
