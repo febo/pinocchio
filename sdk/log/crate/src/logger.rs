@@ -322,7 +322,8 @@ macro_rules! impl_log_for_signed {
                             value = -value
                         };
 
-                        1 + (value as $unsigned_type).write_with_args(&mut buffer[delta..], args)
+                        delta
+                            + (value as $unsigned_type).write_with_args(&mut buffer[delta..], args)
                     }
                 }
             }
