@@ -39,7 +39,7 @@
 //! let lamports = 1_000_000_000u64;
 //!
 //! logger.append("balance (SOL)=");
-//! logger.append(lamports, &[Argument::Precision(9)]);
+//! logger.append_with_args(lamports, &[Argument::Precision(9)]);
 //! logger.log();
 //! ```
 
