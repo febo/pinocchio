@@ -295,9 +295,9 @@ impl_log_for_unsigned_integer!(u128, 39);
 
 /// Implement the log trait for the signed integer types.
 macro_rules! impl_log_for_signed {
-    ( $type:tt, $max_digits:literal ) => {
+    ( $type:tt, $unsigned_type:tt, $max_digits:literal ) => {
         impl Log for $type {
-            fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], _args: &[Argument]) -> usize {
+            fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], args: &[Argument]) -> usize {
                 if buffer.is_empty() {
                     return 0;
                 }
@@ -321,55 +321,7 @@ macro_rules! impl_log_for_signed {
                             value = -value
                         };
 
-                        let mut digits = [UNINIT_BYTE; $max_digits];
-                        let mut offset = $max_digits;
-
-                        while value > 0 {
-                            let remainder = value % 10;
-                            value /= 10;
-                            offset -= 1;
-
-                            unsafe {
-                                digits
-                                    .get_unchecked_mut(offset)
-                                    .write(*DIGITS.get_unchecked(remainder as usize));
-                            }
-                        }
-
-                        // Number of available digits to write.
-                        let available = $max_digits - offset;
-                        // Size of the buffer.
-                        let length = buffer.len() - delta;
-
-                        // Determines if the value was truncated or not by calculating the
-                        // number of digits that can be written.
-                        let (overflow, written) = if available <= length {
-                            (false, available)
-                        } else {
-                            (true, length)
-                        };
-
-                        unsafe {
-                            let ptr = buffer[delta..].as_mut_ptr();
-                            #[cfg(target_os = "solana")]
-                            sol_memcpy_(
-                                ptr as *mut _,
-                                digits[offset..].as_ptr() as *const _,
-                                length as u64,
-                            );
-                            #[cfg(not(target_os = "solana"))]
-                            core::ptr::copy_nonoverlapping(digits[offset..].as_ptr(), ptr, written);
-                        }
-
-                        // There might not have been space for all the value.
-                        if overflow {
-                            unsafe {
-                                let last = buffer.get_unchecked_mut(written + delta - 1);
-                                last.write(TRUCATED);
-                            }
-                        }
-
-                        written + delta
+                        1 + (value as $unsigned_type).write_with_args(&mut buffer[delta..], args)
                     }
                 }
             }
@@ -378,11 +330,11 @@ macro_rules! impl_log_for_signed {
 }
 
 // Supported signed integer types.
-impl_log_for_signed!(i8, 3);
-impl_log_for_signed!(i16, 5);
-impl_log_for_signed!(i32, 10);
-impl_log_for_signed!(i64, 19);
-impl_log_for_signed!(i128, 39);
+impl_log_for_signed!(i8, u8, 3);
+impl_log_for_signed!(i16, u16, 5);
+impl_log_for_signed!(i32, u32, 10);
+impl_log_for_signed!(i64, u64, 19);
+impl_log_for_signed!(i128, u128, 39);
 
 /// Implement the log trait for the &str type.
 impl Log for &str {

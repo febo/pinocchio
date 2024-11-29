@@ -142,5 +142,15 @@ mod tests {
 
         logger.append_with_args(2u64, &[Argument::Precision(9)]);
         assert!(&*logger == "0.0000000@".as_bytes());
+
+        logger.clear();
+
+        logger.append_with_args(-2000000i32, &[Argument::Precision(6)]);
+        assert!(&*logger == "-2.000000".as_bytes());
+
+        logger.clear();
+
+        logger.append_with_args(-2i64, &[Argument::Precision(9)]);
+        assert!(&*logger == "-0.000000@".as_bytes());
     }
 }
