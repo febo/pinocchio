@@ -61,6 +61,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "pinocchio-token2022"
+version = "0.2.0"
+dependencies = [
+ "pinocchio",
+ "pinocchio-pubkey",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
