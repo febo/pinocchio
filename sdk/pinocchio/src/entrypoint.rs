@@ -90,6 +90,23 @@ macro_rules! entrypoint {
         entrypoint!($process_instruction, { $crate::MAX_TX_ACCOUNTS });
     };
     ( $process_instruction:ident, $maximum:expr ) => {
+        $crate::program_entrypoint!($process_instruction, $maximum);
+        $crate::custom_alloc_default!();
+        $crate::custom_panic_default!();
+    };
+}
+
+/// Declare the program entrypoint.
+///
+/// This macro is similar to the `entrypoint!` macro, but it does not set up a global allocator
+/// nor a panic handler. This is useful when the program will set up its own allocator and panic
+/// handler.
+#[macro_export]
+macro_rules! program_entrypoint {
+    ( $process_instruction:ident ) => {
+        program_entrypoint!($process_instruction, { $crate::MAX_TX_ACCOUNTS });
+    };
+    ( $process_instruction:ident, $maximum:expr ) => {
         /// Program entrypoint.
         #[no_mangle]
         pub unsafe extern "C" fn entrypoint(input: *mut u8) -> u64 {
@@ -112,9 +129,6 @@ macro_rules! entrypoint {
                 Err(error) => error.into(),
             }
         }
-
-        $crate::custom_alloc_default!();
-        $crate::custom_panic_default!();
     };
 }
 
@@ -199,12 +213,16 @@ pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
     (program_id, processed, instruction_data)
 }
 
+/// Default panic handler.
+///
+/// This macro sets up a default panic handler that logs the panic message and the file where the
+/// panic occurred. It requires the `"std"` feature to be enabled.
 #[cfg(feature = "std")]
 #[macro_export]
 macro_rules! custom_panic_default {
     () => {
         /// Default panic handler.
-        #[cfg(all(not(feature = "custom-panic"), target_os = "solana"))]
+        #[cfg(target_os = "solana")]
         #[no_mangle]
         fn custom_panic(info: &core::panic::PanicInfo<'_>) {
             // Panic reporting.
@@ -213,16 +231,19 @@ macro_rules! custom_panic_default {
     };
 }
 
+/// Default panic handler.
+///
+/// This macro sets up a default panic handler that logs the file where the panic occurred. This
+/// is used when the `"std"` feature is disabled.
 #[cfg(not(feature = "std"))]
 #[macro_export]
 macro_rules! custom_panic_default {
     () => {
         /// Default panic handler.
-        #[cfg(all(not(feature = "custom-panic"), target_os = "solana"))]
+        #[cfg(target_os = "solana")]
         #[no_mangle]
         fn custom_panic(info: &core::panic::PanicInfo<'_>) {
             if let Some(location) = info.location() {
-                $crate::log::sol_log("- File: ");
                 $crate::log::sol_log(location.file());
             }
             // Panic reporting.
@@ -231,10 +252,13 @@ macro_rules! custom_panic_default {
     };
 }
 
+/// Default global allocator.
+///
+/// This macro sets up a default global allocator that uses a bump allocator to allocate memory.
 #[macro_export]
 macro_rules! custom_alloc_default {
     () => {
-        #[cfg(all(not(feature = "custom-alloc"), target_os = "solana"))]
+        #[cfg(target_os = "solana")]
         #[global_allocator]
         static A: $crate::entrypoint::alloc::BumpAllocator =
             $crate::entrypoint::alloc::BumpAllocator {
@@ -244,9 +268,10 @@ macro_rules! custom_alloc_default {
     };
 }
 
-#[cfg(all(not(feature = "custom-alloc"), target_os = "solana"))]
-/// The bump allocator used as the default rust heap when running programs.
+#[cfg(target_os = "solana")]
 pub mod alloc {
+    //! The bump allocator used as the default rust heap when running programs.
+
     extern crate alloc;
 
     /// The bump allocator used as the default rust heap when running programs.
@@ -281,6 +306,52 @@ pub mod alloc {
         #[inline]
         unsafe fn dealloc(&self, _: *mut u8, _: core::alloc::Layout) {
             // I'm a bump allocator, I don't free.
+        }
+    }
+}
+
+/// Zero global allocator.
+///
+/// Using this macro with the "`std`" feature enabled will result in a compile error.
+#[cfg(feature = "std")]
+#[macro_export]
+macro_rules! custom_alloc_zero {
+    () => {
+        compile_error!("Feature 'std' cannot be enabled.");
+    };
+}
+
+/// Zero global allocator.
+///
+/// This macro sets up a global allocator that denies all allocations. This is useful when the
+/// program does not need to allocate memory.
+#[cfg(not(feature = "std"))]
+#[macro_export]
+macro_rules! custom_alloc_zero {
+    () => {
+        #[cfg(target_os = "solana")]
+        #[global_allocator]
+        static A: $crate::entrypoint::zero_alloc::ZeroAllocator =
+            $crate::entrypoint::zero_alloc::ZeroAllocator;
+    };
+}
+
+#[cfg(not(feature = "std"))]
+pub mod zero_alloc {
+    //! The zero global allocator used when the program does not need to allocate memory.
+
+    /// Zero global allocator.
+    pub struct ZeroAllocator;
+
+    unsafe impl core::alloc::GlobalAlloc for ZeroAllocator {
+        #[inline]
+        unsafe fn alloc(&self, _: core::alloc::Layout) -> *mut u8 {
+            panic!("** ZERO ALLOCATION **");
+        }
+
+        #[inline]
+        unsafe fn dealloc(&self, _: *mut u8, _: core::alloc::Layout) {
+            // I deny all allocations, so I don't need to free.
         }
     }
 }
