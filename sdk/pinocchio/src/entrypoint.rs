@@ -222,7 +222,7 @@ pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
 macro_rules! custom_panic_default {
     () => {
         /// Default panic handler.
-        #[cfg(target_os = "solana")]
+        #[cfg(all(not(feature = "custom-panic"), target_os = "solana"))]
         #[no_mangle]
         fn custom_panic(info: &core::panic::PanicInfo<'_>) {
             // Panic reporting.
@@ -240,7 +240,7 @@ macro_rules! custom_panic_default {
 macro_rules! custom_panic_default {
     () => {
         /// Default panic handler.
-        #[cfg(target_os = "solana")]
+        #[cfg(all(not(feature = "custom-panic"), target_os = "solana"))]
         #[no_mangle]
         fn custom_panic(info: &core::panic::PanicInfo<'_>) {
             if let Some(location) = info.location() {
@@ -258,7 +258,7 @@ macro_rules! custom_panic_default {
 #[macro_export]
 macro_rules! custom_alloc_default {
     () => {
-        #[cfg(target_os = "solana")]
+        #[cfg(all(not(feature = "custom-heap"), target_os = "solana"))]
         #[global_allocator]
         static A: $crate::entrypoint::alloc::BumpAllocator =
             $crate::entrypoint::alloc::BumpAllocator {
