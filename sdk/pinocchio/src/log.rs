@@ -38,7 +38,7 @@ use crate::{account_info::AccountInfo, pubkey::log};
 #[macro_export]
 #[cfg(not(feature = "std"))]
 macro_rules! msg {
-    ($msg:expr) => {
+    ( $msg:expr ) => {
         $crate::log::sol_log($msg)
     };
 }
@@ -46,10 +46,10 @@ macro_rules! msg {
 #[cfg(feature = "std")]
 #[macro_export]
 macro_rules! msg {
-    ($msg:expr) => {
+    ( $msg:expr ) => {
         $crate::log::sol_log($msg)
     };
-    ($($arg:tt)*) => ($crate::log::sol_log(&format!($($arg)*)));
+    ( $( $arg:tt )* ) => ($crate::log::sol_log(&format!($($arg)*)));
 }
 
 /// Print a string to the log.
