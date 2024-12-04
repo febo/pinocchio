@@ -7,15 +7,14 @@ use crate::{
 
 /// Declare the program entrypoint.
 ///
-/// This entrypoint is defined as *lazy* because it does not read the accounts upfront
-/// nor set up global handlers. Instead, it provides an [`InstructionContext`] to the
-/// access input information on demand. This is useful when the program needs more control
-/// over the compute units it uses. The trade-off is that the program is responsible for
-/// managing potential duplicated accounts and set up a `global allocator`
-/// and `panic handler`.
+/// This entrypoint is defined as *lazy* because it does not read the accounts upfront.
+/// Instead, it provides an [`InstructionContext`] to the access input information on demand.
+/// This is useful when the program needs more control over the compute units it uses.
+/// The trade-off is that the program is responsible for managing potential duplicated
+/// accounts and set up a `global allocator` and `panic handler`.
 ///
 /// The usual use-case for a `lazy_entrypoint` is small programs with a single instruction.
-/// For most use-cases, it is recommended to use the [`entrypoint`] macro instead.
+/// For most use-cases, it is recommended to use the [`crate::entrypoint!`] macro instead.
 ///
 /// This macro emits the boilerplate necessary to begin program execution, calling a
 /// provided function to process the program instruction supplied by the runtime, and reporting
@@ -40,9 +39,11 @@ use crate::{
 /// pub mod entrypoint {
 ///
 ///     use pinocchio::{
+///         custom_panic_handler,
+///         entrypoint::lazy::InstructionContext,
 ///         lazy_entrypoint,
-///         lazy_entrypoint::InstructionContext,
 ///         msg,
+///         zero_alloc_allocator,
 ///         ProgramResult
 ///     };
 ///
@@ -51,7 +52,7 @@ use crate::{
 ///     pub fn process_instruction(
 ///         mut context: InstructionContext,
 ///     ) -> ProgramResult {
-///         msg!("Hello from my lazy program!");
+///         msg!("Hello from my `lazy` program!");
 ///         Ok(())
 ///     }
 ///
@@ -60,10 +61,24 @@ use crate::{
 #[macro_export]
 macro_rules! lazy_entrypoint {
     ( $process_instruction:ident ) => {
+        $crate::lazy_program_entrypoint!($process_instruction);
+        $crate::default_allocator!();
+        $crate::default_panic_handler!();
+    };
+}
+
+/// Declare the program entrypoint.
+///
+/// This macro is similar to the [`crate::lazy_entrypoint!`] macro, but it does not set up a
+/// global allocator nor a panic handler. This is useful when the program will set up its own
+/// allocator and panic handler.
+#[macro_export]
+macro_rules! lazy_program_entrypoint {
+    ( $process_instruction:ident ) => {
         /// Program entrypoint.
         #[no_mangle]
         pub unsafe extern "C" fn entrypoint(input: *mut u8) -> u64 {
-            match $process_instruction($crate::lazy_entrypoint::InstructionContext::new(input)) {
+            match $process_instruction($crate::entrypoint::lazy::InstructionContext::new(input)) {
                 Ok(_) => $crate::SUCCESS,
                 Err(error) => error.into(),
             }

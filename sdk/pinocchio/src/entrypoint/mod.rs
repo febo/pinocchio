@@ -1,6 +1,16 @@
 //! Macros and functions for defining the program entrypoint and setting up
 //! global handlers.
 
+pub mod heapless;
+pub mod lazy;
+#[deprecated(
+    since = "0.7.0",
+    note = "Use the `InstructionContext` and `MaybeAccount` directly from the `entrypoint` module instead"
+)]
+pub use lazy as lazy_entrypoint;
+
+pub use lazy::{InstructionContext, MaybeAccount};
+
 use crate::{
     account_info::{Account, AccountInfo, MAX_PERMITTED_DATA_INCREASE},
     pubkey::Pubkey,
@@ -27,14 +37,14 @@ pub const SUCCESS: u64 = super::SUCCESS;
 /// Declare the program entrypoint and set up global handlers.
 ///
 /// The main difference from the standard `entrypoint!` macro is that this macro represents an
-/// entrypoint that does not perform allocattions or copies when reading the input buffer.
+/// entrypoint that does not perform allocations or copies when reading the input buffer.
 ///
 /// This macro emits the common boilerplate necessary to begin program execution, calling a
 /// provided function to process the program instruction supplied by the runtime, and reporting
 /// its result to the runtime.
 ///
-/// It also sets up a [global allocator] and [panic handler], using the [`custom_heap_default`]
-/// and [`custom_panic_default`] macros.
+/// It also sets up a [global allocator] and [panic handler], using the [`default_allocator!`]
+/// and [`default_panic_handler!`] macros.
 ///
 /// The first argument is the name of a function with this type signature:
 ///
@@ -48,16 +58,15 @@ pub const SUCCESS: u64 = super::SUCCESS;
 ///
 /// The second (optional) argument is the maximum number of accounts that the program is expecting.
 /// A program can receive more than the specified maximum, but any account exceeding the maximum will
-/// be ignored. When the maximum is not specified, the default is 64. This is currently the [maximum
+/// be ignored. When the maximum is not specified, the default is `64`. This is currently the [maximum
 /// number of accounts] that a transaction may lock in a block.
 ///
 /// [maximum number of accounts]: https://github.com/anza-xyz/agave/blob/ccabfcf84921977202fd06d3197cbcea83742133/runtime/src/bank.rs#L3207-L3219
 ///
 /// # Examples
 ///
-/// Defining an entrypoint which reads up to 10 accounts and making it conditional on the
-/// `bpf-entrypoint` feature. Although the `entrypoint` module is written inline in this example,
-/// it is common to put it into its own file.
+/// Defining an entrypoint conditional on the `bpf-entrypoint` feature. Although the `entrypoint`
+/// module is written inline in this example, it is common to put it into its own file.
 ///
 /// ```no_run
 /// #[cfg(feature = "bpf-entrypoint")]
@@ -91,8 +100,8 @@ macro_rules! entrypoint {
     };
     ( $process_instruction:ident, $maximum:expr ) => {
         $crate::program_entrypoint!($process_instruction, $maximum);
-        $crate::custom_alloc_default!();
-        $crate::custom_panic_default!();
+        $crate::default_allocator!();
+        $crate::default_panic_handler!();
     };
 }
 
@@ -112,14 +121,14 @@ macro_rules! program_entrypoint {
         pub unsafe extern "C" fn entrypoint(input: *mut u8) -> u64 {
             const UNINIT: core::mem::MaybeUninit<$crate::account_info::AccountInfo> =
                 core::mem::MaybeUninit::<$crate::account_info::AccountInfo>::uninit();
-            // create an array of uninitialized account infos
+            // Create an array of uninitialized account infos.
             let mut accounts = [UNINIT; $maximum];
 
             let (program_id, count, instruction_data) =
                 $crate::entrypoint::deserialize::<$maximum>(input, &mut accounts);
 
-            // call the program's entrypoint passing `count` account infos; we know that
-            // they are initialized so we cast the pointer to a slice of `[AccountInfo]`
+            // Call the program's entrypoint passing `count` account infos; we know that
+            // they are initialized so we cast the pointer to a slice of `[AccountInfo]`.
             match $process_instruction(
                 &program_id,
                 core::slice::from_raw_parts(accounts.as_ptr() as _, count),
@@ -216,10 +225,12 @@ pub unsafe fn deserialize<'a, const MAX_ACCOUNTS: usize>(
 /// Default panic handler.
 ///
 /// This macro sets up a default panic handler that logs the panic message and the file where the
-/// panic occurred. It requires the `"std"` feature to be enabled.
+/// panic occurred.
+///
+/// Note that this requires the `"std"` feature to be enabled.
 #[cfg(feature = "std")]
 #[macro_export]
-macro_rules! custom_panic_default {
+macro_rules! default_panic_handler {
     () => {
         /// Default panic handler.
         #[cfg(all(not(feature = "custom-panic"), target_os = "solana"))]
@@ -233,11 +244,12 @@ macro_rules! custom_panic_default {
 
 /// Default panic handler.
 ///
-/// This macro sets up a default panic handler that logs the file where the panic occurred. This
-/// is used when the `"std"` feature is disabled.
+/// This macro sets up a default panic handler that logs the file where the panic occurred.
+///
+/// This is used when the `"std"` feature is disabled.
 #[cfg(not(feature = "std"))]
 #[macro_export]
-macro_rules! custom_panic_default {
+macro_rules! default_panic_handler {
     () => {
         /// Default panic handler.
         #[cfg(all(not(feature = "custom-panic"), target_os = "solana"))]
@@ -256,7 +268,7 @@ macro_rules! custom_panic_default {
 ///
 /// This macro sets up a default global allocator that uses a bump allocator to allocate memory.
 #[macro_export]
-macro_rules! custom_alloc_default {
+macro_rules! default_allocator {
     () => {
         #[cfg(all(not(feature = "custom-heap"), target_os = "solana"))]
         #[global_allocator]
@@ -269,7 +281,7 @@ macro_rules! custom_alloc_default {
 }
 
 #[cfg(target_os = "solana")]
-pub mod alloc {
+mod alloc {
     //! The bump allocator used as the default rust heap when running programs.
 
     extern crate alloc;
@@ -306,52 +318,6 @@ pub mod alloc {
         #[inline]
         unsafe fn dealloc(&self, _: *mut u8, _: core::alloc::Layout) {
             // I'm a bump allocator, I don't free.
-        }
-    }
-}
-
-/// Zero global allocator.
-///
-/// Using this macro with the "`std`" feature enabled will result in a compile error.
-#[cfg(feature = "std")]
-#[macro_export]
-macro_rules! custom_alloc_zero {
-    () => {
-        compile_error!("Feature 'std' cannot be enabled.");
-    };
-}
-
-/// Zero global allocator.
-///
-/// This macro sets up a global allocator that denies all allocations. This is useful when the
-/// program does not need to allocate memory.
-#[cfg(not(feature = "std"))]
-#[macro_export]
-macro_rules! custom_alloc_zero {
-    () => {
-        #[cfg(target_os = "solana")]
-        #[global_allocator]
-        static A: $crate::entrypoint::zero_alloc::ZeroAllocator =
-            $crate::entrypoint::zero_alloc::ZeroAllocator;
-    };
-}
-
-#[cfg(not(feature = "std"))]
-pub mod zero_alloc {
-    //! The zero global allocator used when the program does not need to allocate memory.
-
-    /// Zero global allocator.
-    pub struct ZeroAllocator;
-
-    unsafe impl core::alloc::GlobalAlloc for ZeroAllocator {
-        #[inline]
-        unsafe fn alloc(&self, _: core::alloc::Layout) -> *mut u8 {
-            panic!("** ZERO ALLOCATION **");
-        }
-
-        #[inline]
-        unsafe fn dealloc(&self, _: *mut u8, _: core::alloc::Layout) {
-            // I deny all allocations, so I don't need to free.
         }
     }
 }

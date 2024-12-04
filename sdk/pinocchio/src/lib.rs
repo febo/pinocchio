@@ -16,7 +16,6 @@ extern crate std;
 pub mod account_info;
 pub mod entrypoint;
 pub mod instruction;
-pub mod lazy_entrypoint;
 pub mod log;
 pub mod memory;
 pub mod program;
