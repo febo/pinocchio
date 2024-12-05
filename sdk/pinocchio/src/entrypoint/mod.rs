@@ -1,14 +1,7 @@
 //! Macros and functions for defining the program entrypoint and setting up
 //! global handlers.
 
-pub mod heapless;
 pub mod lazy;
-#[deprecated(
-    since = "0.7.0",
-    note = "Use the `InstructionContext` and `MaybeAccount` directly from the `entrypoint` module instead"
-)]
-pub use lazy as lazy_entrypoint;
-
 pub use lazy::{InstructionContext, MaybeAccount};
 
 use crate::{
@@ -280,6 +273,32 @@ macro_rules! default_allocator {
     };
 }
 
+/// A global allocator that does not allocate memory.
+///
+/// Using this macro with the "`std`" feature enabled will result in a compile error.
+#[cfg(feature = "std")]
+#[macro_export]
+macro_rules! no_allocator {
+    () => {
+        compile_error!("Feature 'std' cannot be enabled.");
+    };
+}
+
+/// A global allocator that does not allocate memory.
+///
+/// This macro sets up a global allocator that denies all allocations. This is useful when the
+/// program does not need to allocate memory $mdash; the program will panic if it tries to
+/// allocate memory.
+#[cfg(not(feature = "std"))]
+#[macro_export]
+macro_rules! no_allocator {
+    () => {
+        #[cfg(target_os = "solana")]
+        #[global_allocator]
+        static A: $crate::entrypoint::alloc::NoAllocator = $crate::entrypoint::alloc::NoAllocator;
+    };
+}
+
 #[cfg(target_os = "solana")]
 mod alloc {
     //! The bump allocator used as the default rust heap when running programs.
@@ -318,6 +337,23 @@ mod alloc {
         #[inline]
         unsafe fn dealloc(&self, _: *mut u8, _: core::alloc::Layout) {
             // I'm a bump allocator, I don't free.
+        }
+    }
+
+    #[cfg(not(feature = "std"))]
+    /// Zero global allocator.
+    pub struct NoAllocator;
+
+    #[cfg(not(feature = "std"))]
+    unsafe impl core::alloc::GlobalAlloc for NoAllocator {
+        #[inline]
+        unsafe fn alloc(&self, _: core::alloc::Layout) -> *mut u8 {
+            panic!("** NO ALLOCATOR **");
+        }
+
+        #[inline]
+        unsafe fn dealloc(&self, _: *mut u8, _: core::alloc::Layout) {
+            // I deny all allocations, so I don't need to free.
         }
     }
 }

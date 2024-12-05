@@ -24,6 +24,9 @@ pub mod pubkey;
 pub mod syscalls;
 pub mod sysvars;
 
+#[deprecated(since = "0.7.0", note = "Use the `entrypoint` module instead instead")]
+pub use entrypoint::lazy as lazy_entrypoint;
+
 /// Maximum number of accounts that a transaction may process.
 ///
 /// This value is used to set the maximum number of accounts that a program
