@@ -4,6 +4,9 @@
 pub mod lazy;
 pub use lazy::{InstructionContext, MaybeAccount};
 
+#[cfg(target_os = "solana")]
+pub use alloc::BumpAllocator;
+
 use crate::{
     account_info::{Account, AccountInfo, MAX_PERMITTED_DATA_INCREASE},
     pubkey::Pubkey,
@@ -265,11 +268,10 @@ macro_rules! default_allocator {
     () => {
         #[cfg(all(not(feature = "custom-heap"), target_os = "solana"))]
         #[global_allocator]
-        static A: $crate::entrypoint::alloc::BumpAllocator =
-            $crate::entrypoint::alloc::BumpAllocator {
-                start: $crate::entrypoint::HEAP_START_ADDRESS as usize,
-                len: $crate::entrypoint::HEAP_LENGTH,
-            };
+        static A: $crate::entrypoint::BumpAllocator = $crate::entrypoint::BumpAllocator {
+            start: $crate::entrypoint::HEAP_START_ADDRESS as usize,
+            len: $crate::entrypoint::HEAP_LENGTH,
+        };
     };
 }
 
@@ -295,7 +297,7 @@ macro_rules! no_allocator {
     () => {
         #[cfg(target_os = "solana")]
         #[global_allocator]
-        static A: $crate::entrypoint::alloc::NoAllocator = $crate::entrypoint::alloc::NoAllocator;
+        static A: $crate::entrypoint::NoAllocator = $crate::entrypoint::NoAllocator;
     };
 }
 
@@ -339,21 +341,21 @@ mod alloc {
             // I'm a bump allocator, I don't free.
         }
     }
+}
 
-    #[cfg(not(feature = "std"))]
-    /// Zero global allocator.
-    pub struct NoAllocator;
+#[cfg(not(feature = "std"))]
+/// Zero global allocator.
+pub struct NoAllocator;
 
-    #[cfg(not(feature = "std"))]
-    unsafe impl core::alloc::GlobalAlloc for NoAllocator {
-        #[inline]
-        unsafe fn alloc(&self, _: core::alloc::Layout) -> *mut u8 {
-            panic!("** NO ALLOCATOR **");
-        }
+#[cfg(not(feature = "std"))]
+unsafe impl core::alloc::GlobalAlloc for NoAllocator {
+    #[inline]
+    unsafe fn alloc(&self, _: core::alloc::Layout) -> *mut u8 {
+        panic!("** NO ALLOCATOR **");
+    }
 
-        #[inline]
-        unsafe fn dealloc(&self, _: *mut u8, _: core::alloc::Layout) {
-            // I deny all allocations, so I don't need to free.
-        }
+    #[inline]
+    unsafe fn dealloc(&self, _: *mut u8, _: core::alloc::Layout) {
+        // I deny all allocations, so I don't need to free.
     }
 }
