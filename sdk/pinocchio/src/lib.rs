@@ -9,12 +9,13 @@
 //! [`solana-program`]: https://docs.rs/solana-program/latest/solana_program/
 
 #![no_std]
-#![cfg_attr(target_os = "solana", feature(asm_experimental_arch, asm_const))]
+
+#[cfg(feature = "std")]
+extern crate std;
 
 pub mod account_info;
 pub mod entrypoint;
 pub mod instruction;
-pub mod lazy_entrypoint;
 pub mod log;
 pub mod memory;
 pub mod program;
@@ -22,6 +23,9 @@ pub mod program_error;
 pub mod pubkey;
 pub mod syscalls;
 pub mod sysvars;
+
+#[deprecated(since = "0.7.0", note = "Use the `entrypoint` module instead instead")]
+pub use entrypoint::lazy as lazy_entrypoint;
 
 /// Maximum number of accounts that a transaction may process.
 ///

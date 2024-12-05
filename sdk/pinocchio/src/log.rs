@@ -38,18 +38,18 @@ use crate::{account_info::AccountInfo, pubkey::log};
 #[macro_export]
 #[cfg(not(feature = "std"))]
 macro_rules! msg {
-    ($msg:expr) => {
+    ( $msg:expr ) => {
         $crate::log::sol_log($msg)
     };
 }
 
-#[macro_export]
 #[cfg(feature = "std")]
+#[macro_export]
 macro_rules! msg {
-    ($msg:expr) => {
+    ( $msg:expr ) => {
         $crate::log::sol_log($msg)
     };
-    ($($arg:tt)*) => ($crate::log::sol_log(&format!($($arg)*)));
+    ( $( $arg:tt )* ) => ($crate::log::sol_log(&format!($($arg)*)));
 }
 
 /// Print a string to the log.
@@ -98,7 +98,6 @@ pub fn sol_log_slice(slice: &[u8]) {
 ///
 /// - `accounts` - A slice of [`AccountInfo`].
 /// - `data` - The instruction data.
-#[cfg(feature = "std")]
 pub fn sol_log_params(accounts: &[AccountInfo], data: &[u8]) {
     for (i, account) in accounts.iter().enumerate() {
         msg!("AccountInfo");
