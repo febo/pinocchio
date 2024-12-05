@@ -62,6 +62,18 @@ pub fn invoke<const ACCOUNTS: usize>(
     invoke_signed(instruction, account_infos, &[])
 }
 
+/// Invoke a cross-program instruction from a slice of `AccountInfo`s.
+///
+/// # Important
+///
+/// The accounts on the `account_infos` slice must be in the same order as the
+/// `accounts` field of the `instruction`.
+#[cfg(feature = "std")]
+#[inline(always)]
+pub fn slice_invoke(instruction: &Instruction, account_infos: &[&AccountInfo]) -> ProgramResult {
+    slice_invoke_signed(instruction, account_infos, &[])
+}
+
 /// Invoke a cross-program instruction with signatures.
 ///
 /// # Important
@@ -105,6 +117,48 @@ pub fn invoke_signed<const ACCOUNTS: usize>(
             core::slice::from_raw_parts(accounts.as_ptr() as _, ACCOUNTS),
             signers_seeds,
         );
+    }
+
+    Ok(())
+}
+
+/// Invoke a cross-program instruction with signatures from a slice of
+/// `AccountInfo`s.
+///
+/// # Important
+///
+/// The accounts on the `account_infos` slice must be in the same order as the
+/// `accounts` field of the `instruction`.
+#[cfg(feature = "std")]
+pub fn slice_invoke_signed(
+    instruction: &Instruction,
+    account_infos: &[&AccountInfo],
+    signers_seeds: &[Signer],
+) -> ProgramResult {
+    if instruction.accounts.len() < account_infos.len() {
+        return Err(ProgramError::NotEnoughAccountKeys);
+    }
+
+    let mut accounts = std::vec::Vec::with_capacity(account_infos.len());
+
+    for (account_info, account_meta) in account_infos.iter().zip(instruction.accounts.iter()) {
+        if account_info.key() != account_meta.pubkey {
+            return Err(ProgramError::InvalidArgument);
+        }
+
+        if account_meta.is_writable {
+            let _ = account_info.try_borrow_mut_data()?;
+            let _ = account_info.try_borrow_mut_lamports()?;
+        } else {
+            let _ = account_info.try_borrow_data()?;
+            let _ = account_info.try_borrow_lamports()?;
+        }
+
+        accounts.push(Account::from(*account_info));
+    }
+
+    unsafe {
+        invoke_signed_unchecked(instruction, &accounts, signers_seeds);
     }
 
     Ok(())
