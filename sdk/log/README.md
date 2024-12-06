@@ -2,6 +2,9 @@
  <img width="200" alt="pinocchio-log" src="https://github.com/user-attachments/assets/00704646-7e8d-4dfc-bfbb-4ce18d528480"/>
 </p>
 <p align="center">
+ <code>pinocchio-log</code>
+</p>
+<p align="center">
  Lightweight log utility for Solana programs.
 </p>
 <p align="center">
