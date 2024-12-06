@@ -1,6 +1,12 @@
-# <img height="70" alt="pinocchio-log" src="https://github.com/user-attachments/assets/caee2220-d11b-4b6a-aefd-6f6bd9815b73"/>
-
-Lightweight log utility for Solana programs.
+<p align="center">
+ <img width="200" alt="pinocchio-log" src="https://github.com/user-attachments/assets/00704646-7e8d-4dfc-bfbb-4ce18d528480"/>
+</p>
+<p align="center">
+ Lightweight log utility for Solana programs.
+</p>
+<p align="center">
+  <a href="https://crates.io/crates/pinocchio-log"><img src="https://img.shields.io/crates/v/pinocchio-log?logo=rust" /></a>
+</p>
 
 ## Overview
 
