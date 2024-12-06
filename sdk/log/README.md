@@ -1,6 +1,15 @@
-# <img height="70" alt="pinocchio-log" src="https://github.com/user-attachments/assets/caee2220-d11b-4b6a-aefd-6f6bd9815b73"/>
-
-Lightweight log utility for Solana programs.
+<p align="center">
+ <img width="200" alt="pinocchio-log" src="https://github.com/user-attachments/assets/00704646-7e8d-4dfc-bfbb-4ce18d528480"/>
+</p>
+<p align="center">
+ <code>pinocchio-log</code>
+</p>
+<p align="center">
+ Lightweight log utility for Solana programs.
+</p>
+<p align="center">
+  <a href="https://crates.io/crates/pinocchio-log"><img src="https://img.shields.io/crates/v/pinocchio-log?logo=rust" /></a>
+</p>
 
 ## Overview
 
@@ -17,14 +26,17 @@ While the cost related to (1) is *fixed*, in the sense that it does not change w
 This crate defines a lightweight `Logger` type to format log messages and a companion `log!` macro. The logger is a fixed size buffer that can be used to format log messages before sending them to the log output. Any type that implements the `Log` trait can be appended to the logger. Additionally, the logger can the dereferenced to a `&[u8]` slice, which can be used for other purposes &mdash; e.g., it can be used to create `&str` to be stored on an account or return data of programs.
 
 Below is a sample of the improvements observed when formatting log messages, measured in terms of compute units (CU):
-| Ouput message                      | `log!` | `msg!`       | Improvement (%) |
-|------------------------------------|--------|--------------|-----------------|
-| `"Hello world!"`                   | 104    | 104          | -               |
-| `"lamports={}"` + `u64`            | 286    | 625 (+339)   | 55%             |
-| `"{}"` + `[&str; 2]`               | 119    | 1610 (+1491) | 93%             |
-| `"{}"` + `[u64; 2]`                | 483    | 1154 (+671)  | 49%             |
-| `"lamports={}"` + `i64`            | 299    | 659 (+360)   | 55%             |
-| `"{}"` + `[u8; 32]` (pubkey bytes) | 2783   | 8397 (+5614) | 67%             |
+| Ouput message                      | `log!` | `msg!`          | Improvement (%) |
+|------------------------------------|--------|-----------------|-----------------|
+| `"Hello world!"`                   | 104    | 104             | -               |
+| `"lamports={}"` + `u64`            | 286    | 625 (+339)      | 55%             |
+| `"{}"` + `[&str; 2]`               | 119    | 1610 (+1491)    | 93%             |
+| `"{}"` + `[u64; 2]`                | 483    | 1154 (+671)     | 49%             |
+| `"lamports={}"` + `i64`            | 299    | 659 (+360)      | 55%             |
+| `"{}"` + `[u8; 32]` (pubkey bytes) | 2783   | 8397 (+5614)    | 67%             |
+| `"lamports={:.9}"` + `u64`         | 438    | 2656 (+2218)`*` | 84%             |
+
+`*` For `msg!`, the value is logged as a `f64` otherwise the precision formatting is ignored.
 
 > Note: The improvement in CU is accumulative, meaning that if you are logging multiple `u64` values, there will be a 40% improvement per formatted `u64` value.
 
@@ -58,8 +70,10 @@ logger.log();
  ```rust
 use pinocchio_log::log
 
-let amount = 1_000_000_000;
-log!("transfer amount: {}", amount);
+let lamports = 1_000_000_000;
+log!("transfer amount: {}", lamports);
+// Logs the transfer amount in SOL (lamports with 9 decimal digits)
+log!("transfer amount (SOL): {:.9}", lamports);
 ```
 
 Since the formatting routine does not perform additional allocations, the `Logger` type has a fixed size specified on its creation. When using the `log!` macro, it is also possible to specify the size of the logger buffer:
@@ -67,8 +81,8 @@ Since the formatting routine does not perform additional allocations, the `Logge
 ```rust
 use pinocchio_log::log
 
-let amount = 1_000_000_000;
-log!(100, "transfer amount: {}", amount);
+let lamports = 1_000_000_000;
+log!(50, "transfer amount: {}", lamports);
 ```
 
 It is also possible to dereference the `Logger` into a `&[u8]` slice and use the result for other purposes:
@@ -83,7 +97,7 @@ logger.append(amount);
 let prize_title = core::str::from_utf8(&logger)?;
 ```
 
-When using the `Logger` directly, it is possible to include a precision formatting for number values:
+When using the `Logger` directly, it is possible to include a precision formatting for numeric values:
 ```rust
 use pinocchio_log::logger::{Attribute, Logger};
 
@@ -96,7 +110,7 @@ logger.log()
 
 ## Limitations
 
-Currently the `log!` macro does not offer extra formatting options apart from the placeholder "`{}`" for argument values.
+Currently the `log!` macro only offers limited formatting options. Apart from the placeholder `"{}"` for argument values, it is possible to specify the number of decimals digits for numeric values.
 
 ## License
 
