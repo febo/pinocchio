@@ -1,5 +1,3 @@
-use std::sync::LazyLock;
-
 use proc_macro::TokenStream;
 use quote::quote;
 use regex::Regex;
@@ -9,9 +7,6 @@ use syn::{
     punctuated::Punctuated,
     Error, Expr, LitInt, LitStr, Token,
 };
-
-/// Regex pattern to match placeholders in the format string.
-static PLACEHOLDER: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\{.*?\}").unwrap());
 
 /// The default buffer size for the logger.
 const DEFAULT_BUFFER_SIZE: &str = "200";
@@ -90,7 +85,10 @@ pub fn log(input: TokenStream) -> TokenStream {
     } = parse_macro_input!(input as LogArgs);
     let parsed_string = format_string.value();
 
-    let placeholders: Vec<_> = PLACEHOLDER
+    // Regex pattern to match placeholders in the format string.
+    let placeholder_regex = Regex::new(r"\{.*?\}").unwrap();
+
+    let placeholders: Vec<_> = placeholder_regex
         .find_iter(&parsed_string)
         .map(|m| m.as_str())
         .collect();
@@ -127,7 +125,7 @@ pub fn log(input: TokenStream) -> TokenStream {
         // The parts of the format string with the placeholders replaced by arguments.
         let mut replaced_parts = Vec::new();
 
-        let parts: Vec<&str> = PLACEHOLDER.split(&parsed_string).collect();
+        let parts: Vec<&str> = placeholder_regex.split(&parsed_string).collect();
         let part_iter = parts.iter();
 
         let mut arg_iter = args.iter();
