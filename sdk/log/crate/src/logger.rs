@@ -57,7 +57,7 @@ impl<const BUFFER: usize> Logger<BUFFER> {
     }
 
     /// Append a value to the logger with formatting arguments.
-    #[inline]
+    #[inline(never)]
     pub fn append_with_args<T: Log>(&mut self, value: T, args: &[Argument]) {
         if self.is_full() {
             if BUFFER > 0 {
@@ -153,7 +153,7 @@ pub trait Log {
 macro_rules! impl_log_for_unsigned_integer {
     ( $type:tt, $max_digits:literal ) => {
         impl Log for $type {
-            #[inline]
+            #[inline(never)]
             fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], args: &[Argument]) -> usize {
                 if buffer.is_empty() {
                     return 0;
@@ -297,7 +297,7 @@ impl_log_for_unsigned_integer!(u128, 39);
 macro_rules! impl_log_for_signed {
     ( $type:tt, $unsigned_type:tt, $max_digits:literal ) => {
         impl Log for $type {
-            #[inline]
+            #[inline(never)]
             fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], args: &[Argument]) -> usize {
                 if buffer.is_empty() {
                     return 0;
@@ -340,7 +340,7 @@ impl_log_for_signed!(i128, u128, 39);
 
 /// Implement the log trait for the &str type.
 impl Log for &str {
-    #[inline]
+    #[inline(never)]
     fn debug_with_args(&self, buffer: &mut [MaybeUninit<u8>], _args: &[Argument]) -> usize {
         if buffer.is_empty() {
             return 0;
@@ -368,7 +368,7 @@ impl Log for &str {
         offset
     }
 
-    #[inline]
+    #[inline(never)]
     fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], _args: &[Argument]) -> usize {
         let length = core::cmp::min(buffer.len(), self.len());
         let offset = &mut buffer[..length];
@@ -408,7 +408,7 @@ macro_rules! impl_log_for_slice {
         }
     };
     ( @generate_write ) => {
-        #[inline]
+        #[inline(never)]
         fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], _args: &[Argument]) -> usize {
             if buffer.is_empty() {
                 return 0;
