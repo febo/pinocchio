@@ -126,7 +126,7 @@ mod tests {
     }
 
     #[test]
-    fn test_logger_with_args() {
+    fn test_logger_with_precision() {
         let mut logger = Logger::<10>::default();
 
         logger.append_with_args(200_000_000u64, &[Argument::Precision(2)]);
@@ -166,5 +166,19 @@ mod tests {
 
         logger.append_with_args(-2i64, &[Argument::Precision(9)]);
         assert!(&*logger == "-0.000000@".as_bytes());
+
+        logger.clear();
+
+        logger.append_with_args("0123456789", &[Argument::Precision(10)]);
+        assert!(&*logger == "0123456789".as_bytes());
+
+        logger.clear();
+
+        logger.append_with_args("0123456789", &[Argument::Precision(9)]);
+        assert!(&*logger == "...456789".as_bytes());
+
+        let mut logger = Logger::<3>::default();
+        logger.append_with_args("0123456789", &[Argument::Precision(9)]);
+        assert!(&*logger == "..@".as_bytes());
     }
 }

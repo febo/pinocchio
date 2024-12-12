@@ -13,6 +13,9 @@ extern crate std;
 /// Byte representation of the digits [0, 9].
 const DIGITS: [u8; 10] = [b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9'];
 
+/// Prefix for truncated `str` log when precision is used.
+const PREFIX: [u8; 3] = [b'.', b'.', b'.'];
+
 /// Byte represeting a truncated log.
 const TRUCATED: u8 = b'@';
 
@@ -33,6 +36,7 @@ pub struct Logger<const BUFFER: usize> {
 }
 
 impl<const BUFFER: usize> Default for Logger<BUFFER> {
+    #[inline]
     fn default() -> Self {
         Self {
             buffer: [UNINIT_BYTE; BUFFER],
@@ -57,7 +61,7 @@ impl<const BUFFER: usize> Logger<BUFFER> {
     }
 
     /// Append a value to the logger with formatting arguments.
-    #[inline(never)]
+    #[inline]
     pub fn append_with_args<T: Log>(&mut self, value: T, args: &[Argument]) {
         if self.is_full() {
             if BUFFER > 0 {
@@ -153,7 +157,7 @@ pub trait Log {
 macro_rules! impl_log_for_unsigned_integer {
     ( $type:tt, $max_digits:literal ) => {
         impl Log for $type {
-            #[inline(never)]
+            #[inline]
             fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], args: &[Argument]) -> usize {
                 if buffer.is_empty() {
                     return 0;
@@ -297,7 +301,7 @@ impl_log_for_unsigned_integer!(u128, 39);
 macro_rules! impl_log_for_signed {
     ( $type:tt, $unsigned_type:tt, $max_digits:literal ) => {
         impl Log for $type {
-            #[inline(never)]
+            #[inline]
             fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], args: &[Argument]) -> usize {
                 if buffer.is_empty() {
                     return 0;
@@ -312,18 +316,18 @@ macro_rules! impl_log_for_signed {
                         1
                     }
                     mut value => {
-                        let mut delta = 0;
+                        let mut prefix = 0;
 
                         if *self < 0 {
                             unsafe {
                                 buffer.get_unchecked_mut(0).write(b'-');
                             }
-                            delta += 1;
+                            prefix += 1;
                             value = -value
                         };
 
-                        delta
-                            + (value as $unsigned_type).write_with_args(&mut buffer[delta..], args)
+                        prefix
+                            + (value as $unsigned_type).write_with_args(&mut buffer[prefix..], args)
                     }
                 }
             }
@@ -340,7 +344,7 @@ impl_log_for_signed!(i128, u128, 39);
 
 /// Implement the log trait for the &str type.
 impl Log for &str {
-    #[inline(never)]
+    #[inline]
     fn debug_with_args(&self, buffer: &mut [MaybeUninit<u8>], _args: &[Argument]) -> usize {
         if buffer.is_empty() {
             return 0;
@@ -368,24 +372,86 @@ impl Log for &str {
         offset
     }
 
-    #[inline(never)]
-    fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], _args: &[Argument]) -> usize {
-        let length = core::cmp::min(buffer.len(), self.len());
-        let offset = &mut buffer[..length];
+    #[inline]
+    fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], args: &[Argument]) -> usize {
+        // There are 4 different cases to consider:
+        //
+        // 1. No arguments were provided, so the entire string is copied to the buffer if it fits;
+        //    otherwise, the buffer is filled as many characters as possible and the last character
+        //    is set to `TRUCATED`.
+        //
+        // Then cases only applicable when precision formatting is used:
+        //
+        // 2. The buffer is large enough to hold the entire string: the string is copied to the
+        //    buffer and the length of the string is returned.
+        //
+        // 3. The buffer is smaller than the string, but large enough to hold the prefix and part
+        //    of the string: the prefix and part of the string are copied to the buffer. The length
+        //    returned is `prefix` + number of characters copied.
+        //
+        // 4. The buffer is smaller than the string and the prefix: the buffer is filled with the
+        //    prefix and the last character is set to `TRUCATED`. The length returned is the length
+        //    of the buffer.
+        //
+        // The length of the message is determined by whether a precision formatting was used or
+        //  not, and the length of the buffer.
 
-        for (d, s) in offset.iter_mut().zip(self.bytes()) {
-            d.write(s);
+        // No arguments were provided, so the entire string is copied to the buffer if it fits;
+        // otherwise, the buffer is filled as many characters as possible and the last character
+        // is set to `TRUCATED`.
+        let (offset, source, length, prefix, truncated) = if args.is_empty() {
+            let length = core::cmp::min(buffer.len(), self.len());
+            (
+                buffer.as_mut_ptr(),
+                self.as_ptr(),
+                length,
+                0,
+                length != self.len(),
+            )
+        } else {
+            // Since we only have a single variant for the Argument enum, we can
+            // safely unwrap the first element.
+            let Argument::Precision(p) = args[0];
+            let length = core::cmp::min(p as usize, buffer.len());
+            let ptr = buffer.as_mut_ptr();
+
+            // The buffer is large enough to hold the entire string.
+            if length >= self.len() {
+                (ptr, self.as_ptr(), self.len(), 0, false)
+            }
+            // The buffer is large enough to hold the prefix and part of the string. In this
+            // case, the characters from the end of the string are copied to the buffer after
+            // the `PREFIX`.
+            else if length > PREFIX.len() {
+                unsafe {
+                    core::ptr::copy_nonoverlapping(PREFIX.as_ptr(), ptr as *mut _, PREFIX.len());
+
+                    let length = length - PREFIX.len();
+                    let source = self.as_ptr().add(self.len() - length);
+
+                    (ptr.add(PREFIX.len()), source, length, PREFIX.len(), false)
+                }
+            }
+            // The buffer is smaller than the `PREFIX`: the buffer is filled with the `PREFIX`
+            // and the last character is set to `TRUCATED`.
+            else {
+                (ptr, PREFIX.as_ptr(), length, 0, true)
+            }
+        };
+
+        unsafe {
+            core::ptr::copy_nonoverlapping(source, offset as *mut _, length);
         }
 
         // There might not have been space for all the value.
-        if length != self.len() {
+        if truncated {
             unsafe {
                 let last = buffer.get_unchecked_mut(length - 1);
                 last.write(TRUCATED);
             }
         }
 
-        length
+        prefix + length
     }
 }
 
@@ -408,7 +474,7 @@ macro_rules! impl_log_for_slice {
         }
     };
     ( @generate_write ) => {
-        #[inline(never)]
+        #[inline]
         fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], _args: &[Argument]) -> usize {
             if buffer.is_empty() {
                 return 0;
