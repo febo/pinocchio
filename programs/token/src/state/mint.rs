@@ -4,7 +4,7 @@ use pinocchio::{
     pubkey::Pubkey,
 };
 
-use crate::instructions::TokenProgramVariant;
+use crate::{LEGACY_TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID};
 
 /// Mint data.
 #[repr(C)]
@@ -43,17 +43,14 @@ impl Mint {
     /// This method performs owner and length validation on `AccountInfo`, safe borrowing
     /// the account data.
     #[inline]
-    pub fn from_account_info(
-        account_info: &AccountInfo,
-        token_program: TokenProgramVariant,
-    ) -> Result<Ref<Mint>, ProgramError> {
+    pub fn from_account_info(account_info: &AccountInfo) -> Result<Ref<Mint>, ProgramError> {
         if account_info.data_len() != Self::LEN {
             return Err(ProgramError::InvalidAccountData);
         }
 
-        let token_program_id: Pubkey = token_program.into();
-
-        if account_info.owner() != &token_program_id {
+        if account_info.owner() != &TOKEN_2022_PROGRAM_ID
+            && account_info.owner() != &LEGACY_TOKEN_PROGRAM_ID
+        {
             return Err(ProgramError::InvalidAccountOwner);
         }
         Ok(Ref::map(account_info.try_borrow_data()?, |data| unsafe {
@@ -71,16 +68,19 @@ impl Mint {
     /// The caller must ensure that it is safe to borrow the account data – e.g., there are
     /// no mutable borrows of the account data.
     #[inline]
-    pub unsafe fn from_account_info_unchecked<'a>(
-        account_info: &'a AccountInfo,
-        token_program_id: &Pubkey,
-    ) -> Result<&'a Self, ProgramError> {
+    pub unsafe fn from_account_info_unchecked(
+        account_info: &AccountInfo,
+    ) -> Result<&Self, ProgramError> {
         if account_info.data_len() != Self::LEN {
             return Err(ProgramError::InvalidAccountData);
         }
-        if account_info.owner() != token_program_id {
+
+        if account_info.owner() != &TOKEN_2022_PROGRAM_ID
+            && account_info.owner() != &LEGACY_TOKEN_PROGRAM_ID
+        {
             return Err(ProgramError::InvalidAccountOwner);
         }
+
         Ok(Self::from_bytes(account_info.borrow_data_unchecked()))
     }
 
