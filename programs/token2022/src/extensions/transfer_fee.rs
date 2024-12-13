@@ -11,8 +11,6 @@ use pinocchio::{
 
 use crate::{write_bytes, ID, UNINIT_BYTE};
 
-pub const MAX_ACCOUNTS_FOR_WITHDRAW: usize = 10;
-
 /// Transfer fee configuration
 #[repr(C)]
 pub struct TransferFee {
