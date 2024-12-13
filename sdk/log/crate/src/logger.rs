@@ -13,10 +13,10 @@ extern crate std;
 /// Byte representation of the digits [0, 9].
 const DIGITS: [u8; 10] = [b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9'];
 
-/// Prefix for truncated `str` log when precision is used.
-const PREFIX: [u8; 3] = [b'.', b'.', b'.'];
+/// Bytes for a truncated `str` log message.
+const TRUNCATED_SLICE: [u8; 3] = [b'.', b'.', b'.'];
 
-/// Byte represeting a truncated log.
+/// Byte representing a truncated log.
 const TRUCATED: u8 = b'@';
 
 /// An uninitialized byte.
@@ -112,13 +112,6 @@ impl<const BUFFER: usize> Logger<BUFFER> {
     }
 }
 
-/// Formatting arguments.
-#[non_exhaustive]
-pub enum Argument {
-    /// Number of decimal places to display for numbers.
-    Precision(u8),
-}
-
 /// Log a message.
 #[inline(always)]
 pub fn log_message(message: &[u8]) {
@@ -131,6 +124,30 @@ pub fn log_message(message: &[u8]) {
         let message = core::str::from_utf8(message).unwrap();
         std::println!("{}", message);
     }
+}
+
+/// Formatting arguments.
+///
+/// Arguments can be used to specify additional formatting options for the log message.
+/// Note that types might not support all arguments.
+#[non_exhaustive]
+pub enum Argument {
+    /// Number of decimal places to display for numbers.
+    ///
+    /// This is only applicable for numeric types.
+    Precision(u8),
+
+    /// Truncate the output at the end when the specified maximum number of characters
+    /// is exceeded.
+    ///
+    /// This is only applicable for `str` types.
+    TruncateEnd(usize),
+
+    /// Truncate the output at the start when the specified maximum number of characters
+    /// is exceeded.
+    ///
+    /// This is only applicable for `str` types.
+    TruncateStart(usize),
 }
 
 /// Trait to specify the log behavior for a type.
@@ -187,13 +204,13 @@ macro_rules! impl_log_for_unsigned_integer {
                             }
                         }
 
-                        let precision = if args.is_empty() {
-                            0
+                        let precision = if let Some(Argument::Precision(p)) = args
+                            .iter()
+                            .find(|arg| matches!(arg, Argument::Precision(_)))
+                        {
+                            *p as usize
                         } else {
-                            // Since we only have a single variant for the Argument enum, we can
-                            // safely unwrap the first element.
-                            let Argument::Precision(p) = args[0];
-                            p as usize
+                            0
                         };
 
                         // Number of available digits to write.
@@ -396,11 +413,20 @@ impl Log for &str {
         // The length of the message is determined by whether a precision formatting was used or
         //  not, and the length of the buffer.
 
-        // No arguments were provided, so the entire string is copied to the buffer if it fits;
-        // otherwise, the buffer is filled as many characters as possible and the last character
-        // is set to `TRUCATED`.
-        let (offset, source, length, prefix, truncated) = if args.is_empty() {
-            let length = core::cmp::min(buffer.len(), self.len());
+        let (size, truncate_end) = match args
+            .iter()
+            .find(|arg| matches!(arg, Argument::TruncateEnd(_) | Argument::TruncateStart(_)))
+        {
+            Some(Argument::TruncateEnd(size)) => (*size, Some(true)),
+            Some(Argument::TruncateStart(size)) => (*size, Some(false)),
+            _ => (buffer.len(), None),
+        };
+
+        // No truncate arguments were provided, so the entire string is copied to the buffer if
+        // it fits; otherwise, the buffer is filled with as many characters as possible and the
+        // last character is set to `TRUCATED`.
+        let (offset, source, length, prefix, truncated) = if truncate_end.is_none() {
+            let length = core::cmp::min(size, self.len());
             (
                 buffer.as_mut_ptr(),
                 self.as_ptr(),
@@ -409,33 +435,44 @@ impl Log for &str {
                 length != self.len(),
             )
         } else {
-            // Since we only have a single variant for the Argument enum, we can
-            // safely unwrap the first element.
-            let Argument::Precision(p) = args[0];
-            let length = core::cmp::min(p as usize, buffer.len());
+            let length = core::cmp::min(size, buffer.len());
             let ptr = buffer.as_mut_ptr();
 
             // The buffer is large enough to hold the entire string.
             if length >= self.len() {
                 (ptr, self.as_ptr(), self.len(), 0, false)
             }
-            // The buffer is large enough to hold the prefix and part of the string. In this
-            // case, the characters from the end of the string are copied to the buffer after
-            // the `PREFIX`.
-            else if length > PREFIX.len() {
+            // The buffer is large enough to hold the truncated slice and part of the string. In
+            // In this case, the characters from the start or end of the string are copied to the
+            // buffer together with the `TRUNCATED_SLICE`.
+            else if length > TRUNCATED_SLICE.len() {
+                // Number of characters that can be copied to the buffer.
+                let length = length - TRUNCATED_SLICE.len();
+
                 unsafe {
-                    core::ptr::copy_nonoverlapping(PREFIX.as_ptr(), ptr as *mut _, PREFIX.len());
+                    let (offset, source, destination) = if truncate_end == Some(true) {
+                        (length, self.as_ptr(), ptr)
+                    } else {
+                        (
+                            0,
+                            self.as_ptr().add(self.len() - length),
+                            ptr.add(TRUNCATED_SLICE.len()),
+                        )
+                    };
+                    // Copy the truncated slice to the buffer.
+                    core::ptr::copy_nonoverlapping(
+                        TRUNCATED_SLICE.as_ptr(),
+                        ptr.add(offset) as *mut _,
+                        TRUNCATED_SLICE.len(),
+                    );
 
-                    let length = length - PREFIX.len();
-                    let source = self.as_ptr().add(self.len() - length);
-
-                    (ptr.add(PREFIX.len()), source, length, PREFIX.len(), false)
+                    (destination, source, length, TRUNCATED_SLICE.len(), false)
                 }
             }
             // The buffer is smaller than the `PREFIX`: the buffer is filled with the `PREFIX`
             // and the last character is set to `TRUCATED`.
             else {
-                (ptr, PREFIX.as_ptr(), length, 0, true)
+                (ptr, TRUNCATED_SLICE.as_ptr(), length, 0, true)
             }
         };
 
