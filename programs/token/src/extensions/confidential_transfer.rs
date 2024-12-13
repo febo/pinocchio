@@ -8,7 +8,7 @@ use pinocchio::{
     ProgramResult,
 };
 
-use crate::{write_bytes, ID, UNINIT_BYTE};
+use crate::{write_bytes, TOKEN_2022_PROGRAM_ID, UNINIT_BYTE};
 
 use super::ElagamalPubkey;
 
@@ -58,7 +58,7 @@ impl<'a> InitializeMint<'a> {
         }
 
         let instruction = Instruction {
-            program_id: &ID,
+            program_id: &TOKEN_2022_PROGRAM_ID,
             accounts: &account_metas,
             data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 1) },
         };
@@ -100,7 +100,7 @@ impl<'a> UpdateMint<'a> {
         write_bytes(&mut instruction_data[1..33], self.mint_authority);
 
         let instruction = Instruction {
-            program_id: &ID,
+            program_id: &TOKEN_2022_PROGRAM_ID,
             accounts: &account_metas,
             data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 33) },
         };

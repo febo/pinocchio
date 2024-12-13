@@ -1,11 +1,11 @@
+use crate::instructions::TokenProgramVariant;
+
 use super::AccountState;
 use pinocchio::{
     account_info::{AccountInfo, Ref},
     program_error::ProgramError,
     pubkey::Pubkey,
 };
-
-use crate::ID;
 
 /// Token account data.
 #[repr(C)]
@@ -58,11 +58,15 @@ impl TokenAccount {
     #[inline]
     pub fn from_account_info(
         account_info: &AccountInfo,
+        token_program: TokenProgramVariant,
     ) -> Result<Ref<TokenAccount>, ProgramError> {
         if account_info.data_len() != Self::LEN {
             return Err(ProgramError::InvalidAccountData);
         }
-        if account_info.owner() != &ID {
+
+        let token_program_id: Pubkey = token_program.into();
+
+        if account_info.owner() != &token_program_id {
             return Err(ProgramError::InvalidAccountData);
         }
         Ok(Ref::map(account_info.try_borrow_data()?, |data| unsafe {
@@ -82,11 +86,15 @@ impl TokenAccount {
     #[inline]
     pub unsafe fn from_account_info_unchecked(
         account_info: &AccountInfo,
+        token_program: TokenProgramVariant,
     ) -> Result<&TokenAccount, ProgramError> {
         if account_info.data_len() != Self::LEN {
             return Err(ProgramError::InvalidAccountData);
         }
-        if account_info.owner() != &ID {
+
+        let token_program_id: Pubkey = token_program.into();
+
+        if account_info.owner() != &token_program_id {
             return Err(ProgramError::InvalidAccountData);
         }
         Ok(Self::from_bytes(account_info.borrow_data_unchecked()))

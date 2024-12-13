@@ -3,7 +3,6 @@ resolver = "2"
 members = [
     "programs/system",
     "programs/token",
-    "programs/token2022",
     "sdk/log/crate",
     "sdk/log/macro",
     "sdk/pinocchio",

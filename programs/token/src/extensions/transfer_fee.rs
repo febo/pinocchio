@@ -9,7 +9,7 @@ use pinocchio::{
     ProgramResult,
 };
 
-use crate::{write_bytes, ID, UNINIT_BYTE};
+use crate::{write_bytes, TOKEN_2022_PROGRAM_ID, UNINIT_BYTE};
 
 /// Transfer fee configuration
 #[repr(C)]
@@ -59,7 +59,7 @@ impl TransferFeeConfig {
         if account_info.data_len() != Self::LEN {
             return Err(ProgramError::InvalidAccountData);
         }
-        if account_info.owner() != &ID {
+        if account_info.owner() != &TOKEN_2022_PROGRAM_ID {
             return Err(ProgramError::InvalidAccountOwner);
         }
         Ok(Ref::map(account_info.try_borrow_data()?, |data| unsafe {
@@ -83,7 +83,7 @@ impl TransferFeeConfig {
         if account_info.data_len() != Self::LEN {
             return Err(ProgramError::InvalidAccountData);
         }
-        if account_info.owner() != &ID {
+        if account_info.owner() != &TOKEN_2022_PROGRAM_ID {
             return Err(ProgramError::InvalidAccountOwner);
         }
         Ok(Self::from_bytes(account_info.borrow_data_unchecked()))
@@ -165,7 +165,7 @@ impl<'a> InitializeTransferFeeConfig<'a> {
         }
 
         let instruction = Instruction {
-            program_id: &crate::ID,
+            program_id: &crate::TOKEN_2022_PROGRAM_ID,
             accounts: &[AccountMeta::writable(self.mint.key())],
             data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 109) },
         };
@@ -227,7 +227,7 @@ impl<'a> TransferCheckedWithFee<'a> {
         write_bytes(&mut instruction_data[10..18], &self.fee.to_le_bytes());
 
         let instruction = Instruction {
-            program_id: &crate::ID,
+            program_id: &crate::TOKEN_2022_PROGRAM_ID,
             accounts: &account_metas,
             data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 18) },
         };
@@ -270,7 +270,7 @@ impl<'a> WithdrawWithheldTokensFromMint<'a> {
         let instruction_data = [29];
 
         let instruction = Instruction {
-            program_id: &crate::ID,
+            program_id: &crate::TOKEN_2022_PROGRAM_ID,
             accounts: &account_metas,
             data: &instruction_data,
         };
@@ -337,7 +337,7 @@ impl<'a, const ACCOUNTS_LEN: usize> WithdrawWithheldTokensFromAccounts<'a, ACCOU
         };
 
         let instruction = Instruction {
-            program_id: &crate::ID,
+            program_id: &crate::TOKEN_2022_PROGRAM_ID,
             accounts: acc_metas,
             data: &instruction_data,
         };
@@ -405,7 +405,7 @@ impl<'a, const ACCOUNTS_LEN: usize> HarvestWithheldTokensToMint<'a, ACCOUNTS_LEN
         };
 
         let instruction = Instruction {
-            program_id: &crate::ID,
+            program_id: &crate::TOKEN_2022_PROGRAM_ID,
             accounts: acc_metas,
             data: &instruction_data,
         };
@@ -476,7 +476,7 @@ impl<'a> SetTransferFee<'a> {
         );
 
         let instruction = Instruction {
-            program_id: &crate::ID,
+            program_id: &crate::TOKEN_2022_PROGRAM_ID,
             accounts: &account_metas,
             data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, 11) },
         };

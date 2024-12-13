@@ -1,9 +1,14 @@
 #![no_std]
 
+pub mod extensions;
 pub mod instructions;
 pub mod state;
 
-pinocchio_pubkey::declare_id!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+use pinocchio::pubkey::Pubkey;
+use pinocchio_pubkey::pubkey;
+
+pub const LEGACY_TOKEN_PROGRAM_ID: Pubkey = pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+pub const TOKEN_2022_PROGRAM_ID: Pubkey = pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
 
 use core::mem::MaybeUninit;
 

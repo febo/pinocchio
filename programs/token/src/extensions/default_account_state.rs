@@ -3,7 +3,7 @@ use pinocchio::{
     program_error::ProgramError,
 };
 
-use crate::{state::AccountState, ID};
+use crate::{state::AccountState, TOKEN_2022_PROGRAM_ID};
 
 pub struct DefaultAccountState {
     pub state: AccountState,
@@ -24,7 +24,7 @@ impl DefaultAccountState {
         if account_info.data_len() != Self::LEN {
             return Err(ProgramError::InvalidAccountData);
         }
-        if account_info.owner() != &ID {
+        if account_info.owner() != &TOKEN_2022_PROGRAM_ID {
             return Err(ProgramError::InvalidAccountOwner);
         }
         Ok(Ref::map(account_info.try_borrow_data()?, |data| unsafe {
@@ -48,7 +48,7 @@ impl DefaultAccountState {
         if account_info.data_len() != Self::LEN {
             return Err(ProgramError::InvalidAccountData);
         }
-        if account_info.owner() != &ID {
+        if account_info.owner() != &TOKEN_2022_PROGRAM_ID {
             return Err(ProgramError::InvalidAccountOwner);
         }
         Ok(Self::from_bytes(account_info.borrow_data_unchecked()))

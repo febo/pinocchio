@@ -53,14 +53,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pinocchio-token"
-version = "0.2.0"
-dependencies = [
- "pinocchio",
- "pinocchio-pubkey",
-]
-
-[[package]]
 name = "pinocchio-token2022"
 version = "0.2.0"
 dependencies = [
