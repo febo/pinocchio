@@ -166,6 +166,46 @@ pub fn log(input: TokenStream) -> TokenStream {
                             )
                         });
                     }
+                    value if value.starts_with("{:<.") || value.starts_with("{:>.") => {
+                        let size = if let Ok(size) = value[4..value.len() - 1].parse::<usize>() {
+                            size
+                        } else {
+                            return Error::new_spanned(
+                                format_string,
+                                format!("invalid truncate size format: {}", value),
+                            )
+                            .to_compile_error()
+                            .into();
+                        };
+
+                        match value.chars().nth(2) {
+                            Some('<') => {
+                                replaced_parts.push(quote! {
+                                    logger.append_with_args(
+                                        #arg,
+                                        &[pinocchio_log::logger::Argument::TruncateStart(#size)]
+                                    )
+                                });
+                            }
+                            Some('>') => {
+                                replaced_parts.push(quote! {
+                                    logger.append_with_args(
+                                        #arg,
+                                        &[pinocchio_log::logger::Argument::TruncateEnd(#size)]
+                                    )
+                                });
+                            }
+                            _ => {
+                                // This should not happen since we already checked the format.
+                                return Error::new_spanned(
+                                    format_string,
+                                    format!("invalid truncate format: {}", value),
+                                )
+                                .to_compile_error()
+                                .into();
+                            }
+                        }
+                    }
                     _ => {
                         return Error::new_spanned(
                             format_string,
