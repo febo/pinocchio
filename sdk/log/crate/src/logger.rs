@@ -56,13 +56,14 @@ impl<const BUFFER: usize> Deref for Logger<BUFFER> {
 impl<const BUFFER: usize> Logger<BUFFER> {
     /// Append a value to the logger.
     #[inline(always)]
-    pub fn append<T: Log>(&mut self, value: T) {
+    pub fn append<T: Log>(&mut self, value: T) -> &mut Self {
         self.append_with_args(value, &[]);
+        self
     }
 
     /// Append a value to the logger with formatting arguments.
     #[inline]
-    pub fn append_with_args<T: Log>(&mut self, value: T, args: &[Argument]) {
+    pub fn append_with_args<T: Log>(&mut self, value: T, args: &[Argument]) -> &mut Self {
         if self.is_full() {
             if BUFFER > 0 {
                 unsafe {
@@ -73,6 +74,8 @@ impl<const BUFFER: usize> Logger<BUFFER> {
         } else {
             self.offset += value.write_with_args(&mut self.buffer[self.offset..], args);
         }
+
+        self
     }
 
     /// Log the message in the buffer.

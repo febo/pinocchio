@@ -108,9 +108,31 @@ logger.append_with_args(amount, &[Argument::Precision(9)]);
 logger.log()
 ```
 
-## Limitations
+And a maximum length for `&str` types with a truncate strategy:
+```rust
+use pinocchio_log::logger::{Attribute, Logger};
 
-Currently the `log!` macro only offers limited formatting options. Apart from the placeholder `"{}"` for argument values, it is possible to specify the number of decimals digits for numeric values.
+let program_name = "pinocchio-program";
+let mut logger = Logger::<100>::default();
+logger.append_with_args(program_name, &[Argument::TruncateStart(10)]);
+logger.log() // log message: "...program"
+
+let mut logger = Logger::<100>::default();
+logger.append_with_args(program_name, &[Argument::TruncateEnd(10)]);
+logger.log() // log message: "pinocchio-..."
+```
+
+## Formatting Options
+
+Formatting options are represented by `Attribute` variants and can be passed to the `Logger` when appending messages using `append_with_args`.
+
+| Variant                | Description                                     | Macro Format     |
+| ---------------------- | ----------------------------------------------- | ---------------- |
+| `Precision(u8)`        | Number of decimal places to display for numbers`*` | "{.*precision*}" |
+| `TruncateEnd(usize)`   | Truncate the output at the end when the specified maximum number of characters (size) is exceeded | "{<.*size*}"     |
+| `TruncateStart(usize)` | Truncate the output at the start when the specified maximum number of characters (size) is exceeded | "{>.*size*}"     |
+
+`*` The `Precision` adds a decimal formatting to integer numbers. This is useful to log numeric integer amounts that represent values with decimal precision.
 
 ## License
 
