@@ -38,14 +38,14 @@ version = "0.6.0"
 
 [[package]]
 name = "pinocchio-log"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "pinocchio-log-macro",
 ]
 
 [[package]]
 name = "pinocchio-log-macro"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "quote",
  "regex",
