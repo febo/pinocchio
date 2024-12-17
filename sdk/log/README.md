@@ -108,18 +108,39 @@ logger.append_with_args(amount, &[Argument::Precision(9)]);
 logger.log()
 ```
 
-And a maximum length for `&str` types with a truncate strategy:
+or a formatting string on the `log!` macro:
+```rust
+use pinocchio_log::log
+
+let lamports = 1_000_000_000;
+log!("transfer amount (SOL: {:.9}", lamports);
+```
+
+For `&str` types, it is possible to specify a maximim length and a truncation strategy using one of the `Argument::Truncate*` variants:
 ```rust
 use pinocchio_log::logger::{Attribute, Logger};
 
 let program_name = "pinocchio-program";
 let mut logger = Logger::<100>::default();
 logger.append_with_args(program_name, &[Argument::TruncateStart(10)]);
-logger.log() // log message: "...program"
+// log message: "...program"
+logger.log();
 
 let mut logger = Logger::<100>::default();
 logger.append_with_args(program_name, &[Argument::TruncateEnd(10)]);
-logger.log() // log message: "pinocchio-..."
+// log message: "pinocchio-..."
+logger.log();
+```
+
+or a formatting string on the `log!` macro:
+```rust
+use pinocchio_log::log
+
+let program_name = "pinocchio-program";
+// log message: "...program"
+log!("{:<.10}", program_name); 
+// log message: "pinocchio-..."
+log!("{:>.10}", program_name); 
 ```
 
 ## Formatting Options
@@ -129,8 +150,8 @@ Formatting options are represented by `Attribute` variants and can be passed to 
 | Variant                | Description                                     | Macro Format     |
 | ---------------------- | ----------------------------------------------- | ---------------- |
 | `Precision(u8)`        | Number of decimal places to display for numbers`*` | "{.*precision*}" |
-| `TruncateEnd(usize)`   | Truncate the output at the end when the specified maximum number of characters (size) is exceeded | "{<.*size*}"     |
-| `TruncateStart(usize)` | Truncate the output at the start when the specified maximum number of characters (size) is exceeded | "{>.*size*}"     |
+| `TruncateEnd(usize)`   | Truncate the output at the end when the specified maximum number of characters (size) is exceeded | "{>.*size*}"     |
+| `TruncateStart(usize)` | Truncate the output at the start when the specified maximum number of characters (size) is exceeded | "{<.*size*}"     |
 
 `*` The `Precision` adds a decimal formatting to integer numbers. This is useful to log numeric integer amounts that represent values with decimal precision.
 
