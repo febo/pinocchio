@@ -1,8 +1,8 @@
+<h1 align="center">
+  <code>pinocchio-log</code>
+</h1>
 <p align="center">
- <img width="200" alt="pinocchio-log" src="https://github.com/user-attachments/assets/00704646-7e8d-4dfc-bfbb-4ce18d528480"/>
-</p>
-<p align="center">
- <code>pinocchio-log</code>
+ <img width="350" alt="pinocchio-log" src="https://github.com/user-attachments/assets/9b100f7c-216d-4849-b27d-3436f88af1bf"/>
 </p>
 <p align="center">
  Lightweight log utility for Solana programs.
