@@ -1,6 +1,6 @@
 # <img height="70" alt="pinocchio-log-macro" src="https://github.com/user-attachments/assets/ea3a100d-c89b-4f54-93ae-b3c2ffbd4610"/>
 
-Companion `log!` macro for [`pinocchio-log`](https://crates.io/crates/pinocchio-log). It automates the creation of a `Logger` object to log a message. It support a limited subset of the [`format!`](https://doc.rust-lang.org/std/fmt/) syntax. The macro parses the format string at compile time and generates the calls to a `Logger` object to generate the corresponding formatted message.
+Companion `log!` macro for [`pinocchio-log`](https://crates.io/crates/pinocchio-log). It automates the creation of a `Logger` object to log a message. It support a subset of the [`format!`](https://doc.rust-lang.org/std/fmt/) syntax. The macro parses the format string at compile time and generates the calls to a `Logger` object to generate the corresponding formatted message.
 
 ## Usage
 
@@ -27,6 +27,25 @@ use pinocchio_log::log
 
 let very_long_message = "...";
 log!(500, "message: {}", very_long_message);
+```
+
+It is possible to include a precision formatting for numeric values:
+```rust
+use pinocchio_log::log
+
+let lamports = 1_000_000_000;
+log!("transfer amount (SOL: {:.9}", lamports);
+```
+
+For `&str` types, it is possible to specify a maximim length and a truncation strategy:
+```rust
+use pinocchio_log::log
+
+let program_name = "pinocchio-program";
+// log message: "...program"
+log!("{:<.10}", program_name); 
+// log message: "pinocchio-..."
+log!("{:>.10}", program_name); 
 ```
 
 ## License
