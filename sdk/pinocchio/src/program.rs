@@ -279,7 +279,8 @@ pub fn set_return_data(data: &[u8]) {
 pub fn get_return_data() -> Option<ReturnData> {
     #[cfg(target_os = "solana")]
     {
-        let mut data = [0u8; MAX_RETURN_DATA];
+        const UNINIT_BYTE: core::mem::MaybeUninit<u8> = core::mem::MaybeUninit::<u8>::uninit();
+        let mut data = [UNINIT_BYTE; MAX_RETURN_DATA];
         let mut program_id = Pubkey::default();
 
         let size = unsafe {
@@ -311,7 +312,7 @@ pub struct ReturnData {
     program_id: Pubkey,
 
     /// Return data set by the program.
-    data: [u8; MAX_RETURN_DATA],
+    data: [core::mem::MaybeUninit<u8>; MAX_RETURN_DATA],
 
     /// Length of the return data.
     size: usize,
@@ -325,7 +326,7 @@ impl ReturnData {
 
     /// Return the data set by the program.
     pub fn as_slice(&self) -> &[u8] {
-        &self.data[..self.size]
+        unsafe { core::slice::from_raw_parts(self.data.as_ptr() as _, self.size) }
     }
 }
 
