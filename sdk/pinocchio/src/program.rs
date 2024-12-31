@@ -285,7 +285,7 @@ pub fn get_return_data() -> Option<ReturnData> {
 
         let size = unsafe {
             crate::syscalls::sol_get_return_data(
-                data.as_mut_ptr(),
+                data.as_mut_ptr() as *mut u8,
                 data.len() as u64,
                 &mut program_id,
             )
