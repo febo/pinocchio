@@ -172,7 +172,7 @@ impl InstructionContext {
     /// This method can only be used after all accounts have been read; otherwise, it will
     /// return a [`ProgramError::InvalidInstructionData`] error.
     #[inline(always)]
-    pub fn instruction_data(&mut self) -> Result<(&[u8], &Pubkey), ProgramError> {
+    pub fn instruction_data(&mut self) -> Result<&[u8], ProgramError> {
         if self.remaining > 0 {
             return Err(ProgramError::InvalidInstructionData);
         }
@@ -187,13 +187,39 @@ impl InstructionContext {
     /// It is up to the caller to guarantee that all accounts have been read; calling this method
     /// before reading all accounts will result in undefined behavior.
     #[inline(always)]
-    pub unsafe fn instruction_data_unchecked(&mut self) -> (&[u8], &Pubkey) {
+    pub unsafe fn instruction_data_unchecked(&mut self) -> &[u8] {
         let data_len = *(self.input.add(self.offset) as *const usize);
         // shadowing the offset to avoid leaving it in an inconsistent state
         let offset = self.offset + core::mem::size_of::<u64>();
-        let data = core::slice::from_raw_parts(self.input.add(offset), data_len);
+        core::slice::from_raw_parts(self.input.add(offset), data_len)
+    }
 
-        (data, &*(self.input.add(offset + data_len) as *const Pubkey))
+    /// Returns the program id for the instruction.
+    ///
+    /// This method can only be used after all accounts have been read; otherwise, it will
+    /// return a [`ProgramError::InvalidInstructionData`] error.
+    #[inline(always)]
+    pub fn program_id(&mut self) -> Result<&Pubkey, ProgramError> {
+        if self.remaining > 0 {
+            return Err(ProgramError::InvalidInstructionData);
+        }
+
+        Ok(unsafe { self.program_id_unchecked() })
+    }
+
+    /// Returns the program id for the instruction.
+    ///
+    /// # Safety
+    ///
+    /// It is up to the caller to guarantee that all accounts have been read; calling this method
+    /// before reading all accounts will result in undefined behavior.
+    #[inline(always)]
+    pub unsafe fn program_id_unchecked(&mut self) -> &Pubkey {
+        let data_len = *(self.input.add(self.offset) as *const usize);
+        // shadowing the offset to avoid leaving it in an inconsistent state
+        &*(self
+            .input
+            .add(self.offset + core::mem::size_of::<u64>() + data_len) as *const Pubkey)
     }
 }
 
