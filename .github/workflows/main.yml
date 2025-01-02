@@ -51,7 +51,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo
       - name: Build
-        run: cargo build-bpf --all-features
+        run: cargo build-bpf
 
   test:
     name: Test
