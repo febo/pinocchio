@@ -132,7 +132,8 @@ The `InstructionContext` provides on-demand access to the information of the inp
 
 * `available()`: number of available accounts
 * `next_account()`: parsers the next available account (can be used as many times as accounts available)
-* `instruction_data()`: parsers the intruction data and program id
+* `instruction_data()`: parsers the intruction data
+* `program_id()`: parsers the program id
 
 > ⚠️ **Note:**
 > The `lazy_program_entrypoint!` does not set up a global allocator nor a panic handler. A program should explicitly use one of the provided macros to set them up or include its own implementation.
