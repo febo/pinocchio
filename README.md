@@ -73,18 +73,15 @@ use pinocchio::{
   pubkey::Pubkey
 };
 
-#[cfg(feature = "bpf-entrypoint")]
-mod entrypoint {
-  entrypoint!(process_instruction);
+entrypoint!(process_instruction);
 
-  pub fn process_instruction(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    instruction_data: &[u8],
-  ) -> ProgramResult {
-    msg!("Hello from my program!");
-    Ok(())
-  }
+pub fn process_instruction(
+  program_id: &Pubkey,
+  accounts: &[AccountInfo],
+  instruction_data: &[u8],
+) -> ProgramResult {
+  msg!("Hello from my program!");
+  Ok(())
 }
 ```
 
@@ -94,15 +91,19 @@ The information from the input is parsed into their own entities:
 * `accounts`: the accounts received
 * `instruction_data`: data for the instruction
 
-The symbols emitted by the `entrypoint!` macro can only be defined once globally. As such, it is common practice to define a Cargo [feature](https://doc.rust-lang.org/cargo/reference/features.html) to conditionally enable the module that includes the `entrypoint!` macro invocation &mdash; the convention is to name the feature `bpf-entrypoint`.
-
-`pinocchio` also offers variations of the program entrypoint (`lazy_program_allocator`) and global allocator (`no_allocator`). In order to use these, the program needs to specify the program entrypoint, global allocator and pani handler individually.
+`pinocchio` also offers variations of the program entrypoint (`lazy_program_allocator`) and global allocator (`no_allocator`). In order to use these, the program needs to specify the program entrypoint, global allocator and panic handler individually. The `entrypoint!` macro is equivalent to writing:
+```rust
+program_entrypoint!(process_instruction);
+default_allocator!();
+default_panic_handler!();
+```
+Any of these macros can be replaced by other implementations and `pinocchio` offers a couple of variants for this.
 
 📌 [`lazy_program_entrypoint!`](https://docs.rs/pinocchio/latest/pinocchio/macro.lazy_program_entrypoint.html)
 
-The `entrypoint!` macro looks similar to the "standard" one found in `solana-program`. It parsers the whole input and provides the `program_id`, `accounts` and `instruction_data` separately. This consumes compute units before the program begins its execution. In some cases, it is beneficial for a program to have more control when the input parsing is happening, even whether the parsing is needed or not &mdash; this is the purpose of the [`lazy_entrypoint!`](https://docs.rs/pinocchio/latest/pinocchio/macro.lazy_program_entrypoint.html) macro. This macro only wraps the program input and provides methods to parse the input on demand.
+The `entrypoint!` macro looks similar to the "standard" one found in `solana-program`. It parsers the whole input and provides the `program_id`, `accounts` and `instruction_data` separately. This consumes compute units before the program begins its execution. In some cases, it is beneficial for a program to have more control when the input parsing is happening, even whether the parsing is needed or not &mdash; this is the purpose of the [`lazy_program_entrypoint!`](https://docs.rs/pinocchio/latest/pinocchio/macro.lazy_program_entrypoint.html) macro. This macro only wraps the program input and provides methods to parse the input on demand.
 
-The `lazy_entrypoint` is suitable for programs that have a single or very few instructions, since it requires the program to handle the parsing, which can become complex as the number of instructions increases. For "larger" programs, the [`program_entrypoint`](https://docs.rs/pinocchio/latest/pinocchio/macro.program_entrypoint.html) will likely be easier and more efficient to use.
+The `lazy_entrypoint` is suitable for programs that have a single or very few instructions, since it requires the program to handle the parsing, which can become complex as the number of instructions increases. For *larger* programs, the [`program_entrypoint`](https://docs.rs/pinocchio/latest/pinocchio/macro.program_entrypoint.html) will likely be easier and more efficient to use.
 
 To use the `lazy_program_entrypoint!` macro, use the following in your entrypoint definition:
 ```rust
@@ -110,23 +111,20 @@ use pinocchio::{
   default_allocator,
   default_panic_handler,
   entrypoint::InstructionContext,
-  lazy_entrypoint,
+  lazy_program_entrypoint,
   msg,
   ProgramResult
 };
 
-#[cfg(feature = "bpf-entrypoint")]
-mod entrypoint {
-  lazy_program_entrypoint!(process_instruction);
-  default_allocator!();
-  default_panic_handler!();
+lazy_program_entrypoint!(process_instruction);
+default_allocator!();
+default_panic_handler!();
 
-  pub fn process_instruction(
-    mut context: InstructionContext,
-  ) -> ProgramResult {
+pub fn process_instruction(
+  mut context: InstructionContext
+) -> ProgramResult {
     msg!("Hello from my lazy program!");
     Ok(())
-  }
 }
 ```
 
@@ -155,26 +153,23 @@ use pinocchio::{
   pubkey::Pubkey
 };
 
-#[cfg(feature = "bpf-entrypoint")]
-mod entrypoint {
-  program_entrypoint!(process_instruction);
-  default_panic_handler!();
-  no_allocator!();
+program_entrypoint!(process_instruction);
+default_panic_handler!();
+no_allocator!();
 
-  pub fn process_instruction(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    instruction_data: &[u8],
-  ) -> ProgramResult {
-    msg!("Hello from my `no_std` program!");
-    Ok(())
-  }
+pub fn process_instruction(
+  program_id: &Pubkey,
+  accounts: &[AccountInfo],
+  instruction_data: &[u8],
+) -> ProgramResult {
+  msg!("Hello from `no_std` program!");
+  Ok(())
 }
 ```
 > ⚠️ **Note:**
 > The `no_allocator!` macro can also be used in combination with the `lazy_program_entrypoint!`.
 
-## Crate features
+## Crate feature: `std`
 
 By default, `pinocchio` is a `no_std` crate. This means that it does not use any code from the standard (`std`) library. While this does not affect how `pinocchio` is used, there is a one particular apparent difference. In a `no_std` environment, the `msg!` macro does not provide any formatting options since the `format!` macro requires the `std` library. In order to use `msg!` with formatting, the `std` feature should be enable when adding `pinocchio` as a dependency:
 ```
@@ -182,6 +177,38 @@ pinocchio = { version = "0.7.0", features = ["std"] }
 ```
 
 Instead of enabling the `std` feature to be able to format log messages with `msg!`, it is recommented to use the [`pinocchio-log`](https://crates.io/crates/pinocchio-log) crate. This crate provides a lightweight `log!` macro with better compute units consumption than the standard `format!` macro without requiring the `std` library.
+
+## Advance entrypoint configuration
+
+The symbols emitted by the entrypoint macros &mdash; program entrypoint, global allocator and default panic handler &mdash; can only be defined once globally. If the program crate is also intended to be use as a library, it is common practice to define a Cargo [feature](https://doc.rust-lang.org/cargo/reference/features.html) in your program crate to conditionally enable the module that includes the `entrypoint!` macro invocation. The convention is to name the feature `bpf-entrypoint`.
+
+```rust
+#[cfg(feature = "bpf-entrypoint")]
+mod entrypoint {
+  use pinocchio::{
+    account_info::AccountInfo,
+    entrypoint,
+    msg,
+    ProgramResult,
+    pubkey::Pubkey
+  };
+
+  entrypoint!(process_instruction);
+
+  pub fn process_instruction(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    instruction_data: &[u8],
+  ) -> ProgramResult {
+    msg!("Hello from my program!");
+    Ok(())
+  }
+}
+```
+When building the program binary, you must enable the `bpf-entrypoint` feature:
+```bash
+cargo build-sbf --features bpf-entrypoint
+```
 
 ## License
 
