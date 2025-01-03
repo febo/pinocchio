@@ -9,4 +9,4 @@ repository = { workspace = true }
 
 [dependencies]
 five8_const = { workspace = true }
-pinocchio = { workspace = true, version = "<= 0.7" }
+pinocchio = { workspace = true }

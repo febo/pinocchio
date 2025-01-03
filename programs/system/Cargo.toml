@@ -8,5 +8,5 @@ readme = "./README.md"
 repository = { workspace = true }
 
 [dependencies]
-pinocchio = { workspace = true, version = ">= 0.6, <= 0.7" }
+pinocchio = { workspace = true }
 pinocchio-pubkey = { workspace = true }
