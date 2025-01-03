@@ -61,7 +61,7 @@ The [`entrypoint!`](https://docs.rs/pinocchio/latest/pinocchio/macro.entrypoint.
 
 * [`program_entrypoint!`](https://docs.rs/pinocchio/latest/pinocchio/macro.program_entrypoint.html): declares the program entrypoint
 * [`default_allocator!`](https://docs.rs/pinocchio/latest/pinocchio/macro.default_allocator.html): declares the default (bump) global allocator
-* [`default_panic_hanlder`](https://docs.rs/pinocchio/latest/pinocchio/macro.default_panic_handler.html): declares the default panic handler
+* [`default_panic_hanlder!`](https://docs.rs/pinocchio/latest/pinocchio/macro.default_panic_handler.html): declares the default panic handler
 
 To use the `entrypoint!` macro, use the following in your entrypoint definition:
 ```rust
@@ -103,7 +103,7 @@ Any of these macros can be replaced by other implementations and `pinocchio` off
 
 The `entrypoint!` macro looks similar to the "standard" one found in `solana-program`. It parsers the whole input and provides the `program_id`, `accounts` and `instruction_data` separately. This consumes compute units before the program begins its execution. In some cases, it is beneficial for a program to have more control when the input parsing is happening, even whether the parsing is needed or not &mdash; this is the purpose of the [`lazy_program_entrypoint!`](https://docs.rs/pinocchio/latest/pinocchio/macro.lazy_program_entrypoint.html) macro. This macro only wraps the program input and provides methods to parse the input on demand.
 
-The `lazy_entrypoint` is suitable for programs that have a single or very few instructions, since it requires the program to handle the parsing, which can become complex as the number of instructions increases. For *larger* programs, the [`program_entrypoint`](https://docs.rs/pinocchio/latest/pinocchio/macro.program_entrypoint.html) will likely be easier and more efficient to use.
+The `lazy_entrypoint` is suitable for programs that have a single or very few instructions, since it requires the program to handle the parsing, which can become complex as the number of instructions increases. For *larger* programs, the [`program_entrypoint!`](https://docs.rs/pinocchio/latest/pinocchio/macro.program_entrypoint.html) will likely be easier and more efficient to use.
 
 To use the `lazy_program_entrypoint!` macro, use the following in your entrypoint definition:
 ```rust
@@ -140,7 +140,7 @@ The `InstructionContext` provides on-demand access to the information of the inp
 
 📌 [`no_allocator!`](https://docs.rs/pinocchio/latest/pinocchio/macro.no_allocator.html)
 
-When writing programs, it can be useful to make sure the program does not attempt to make any allocations. For this cases, `pinocchio` includes a [`no_allocator`](https://docs.rs/pinocchio/latest/pinocchio/macro.no_allocator.html) macro that set a global allocator just panics at any attempt to allocate memory.
+When writing programs, it can be useful to make sure the program does not attempt to make any allocations. For this cases, `pinocchio` includes a [`no_allocator!`](https://docs.rs/pinocchio/latest/pinocchio/macro.no_allocator.html) macro that set a global allocator just panics at any attempt to allocate memory.
 
 To use the `no_allocator!` macro, use the following in your entrypoint definition:
 ```rust
