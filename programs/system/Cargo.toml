@@ -1,12 +1,12 @@
 [package]
 name = "pinocchio-system"
 description = "Pinocchio helpers to invoke System program instructions"
-version = "0.2.0"
+version = "0.2.1"
 edition = { workspace = true }
 license = { workspace = true }
 readme = "./README.md"
 repository = { workspace = true }
 
 [dependencies]
-pinocchio = { workspace = true }
+pinocchio = { workspace = true, version = ">= 0.6, <= 0.7" }
 pinocchio-pubkey = { workspace = true }
