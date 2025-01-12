@@ -436,7 +436,7 @@ impl AccountInfo {
         *(self.data_ptr().sub(48) as *mut u64) = 0u64;
         *(self.data_ptr().sub(40) as *mut u64) = 0u64;
         *(self.data_ptr().sub(32) as *mut u64) = 0u64;
-        *(self.data_ptr().sub(16) as *mut u64) = 0u64;
+        *(self.data_ptr().sub(24) as *mut u64) = 0u64;
         // Zero the account lamports.
         (*self.raw).lamports = 0;
         // Zero the account data length.
