@@ -3,7 +3,18 @@
 //! This is required for the rent sysvar implementation.
 
 use super::Sysvar;
-use crate::impl_sysvar_get;
+use crate::{
+    account_info::{AccountInfo, Ref},
+    impl_sysvar_get,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+};
+
+/// The ID of the rent sysvar.
+pub const RENT_ID: Pubkey = [
+    6, 167, 213, 23, 25, 44, 92, 81, 33, 140, 201, 76, 61, 74, 241, 127, 88, 218, 238, 8, 155, 161,
+    253, 68, 227, 219, 217, 138, 0, 0, 0, 0,
+];
 
 /// Default rental rate in lamports/byte-year.
 ///
@@ -54,13 +65,63 @@ pub struct Rent {
 }
 
 impl Rent {
+    /// The length of the `Rent` sysvar account data.
+    pub const LEN: usize = 8 + 8 + 1;
+
+    /// Return a `Rent` from the given account info.
+    ///
+    /// This method performs a check on the account info key.
+    #[inline]
+    pub fn from_account_info(account_info: &AccountInfo) -> Result<Ref<Rent>, ProgramError> {
+        if account_info.key() != &RENT_ID {
+            return Err(ProgramError::InvalidArgument);
+        }
+        Ok(Ref::map(account_info.try_borrow_data()?, |data| unsafe {
+            Self::from_bytes_unchecked(data)
+        }))
+    }
+
+    /// Return a `Mint` from the given account info.
+    ///
+    /// This method performs a check on the account info key, but does not
+    /// perform the borrow check.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that it is safe to borrow the account data – e.g., there are
+    /// no mutable borrows of the account data.
+    #[inline]
+    pub unsafe fn from_account_info_unchecked(
+        account_info: &AccountInfo,
+    ) -> Result<&Self, ProgramError> {
+        if account_info.key() != &RENT_ID {
+            return Err(ProgramError::InvalidArgument);
+        }
+        Ok(Self::from_bytes_unchecked(
+            account_info.borrow_data_unchecked(),
+        ))
+    }
+
+    /// Return a `Rent` from the given bytes.
+    ///
+    /// This method performs a length validation. The caller must ensure that `bytes` contains
+    /// a valid representation of `Rent`.
+    #[inline]
+    pub fn from_bytes(bytes: &[u8]) -> Result<&Self, ProgramError> {
+        if bytes.len() != Self::LEN {
+            return Err(ProgramError::InvalidArgument);
+        }
+        Ok(unsafe { Self::from_bytes_unchecked(bytes) })
+    }
+
     /// Return a `Rent` from the given bytes.
     ///
     /// # Safety
     ///
-    /// The caller must ensure that `bytes` contains a valid representation of `Rent`.
+    /// The caller must ensure that `bytes` contains a valid representation of `Rent` and
+    /// that is has the expected length.
     #[inline]
-    pub unsafe fn from_bytes(bytes: &[u8]) -> &Self {
+    pub unsafe fn from_bytes_unchecked(bytes: &[u8]) -> &Self {
         &*(bytes.as_ptr() as *const Rent)
     }
 
