@@ -120,7 +120,9 @@ pub fn find_program_address(seeds: &[&[u8]], program_id: &Pubkey) -> (Pubkey, u8
 pub fn try_find_program_address(seeds: &[&[u8]], program_id: &Pubkey) -> Option<(Pubkey, u8)> {
     #[cfg(target_os = "solana")]
     {
-        let mut bytes = [0; 32];
+        // Note: since the array will be returned, it is "cheaper" to have
+        // it initialized instead of having to do a transmute later.
+        let mut bytes = [0u8; 32];
         let mut bump_seed = u8::MAX;
         let result = unsafe {
             crate::syscalls::sol_try_find_program_address(
@@ -172,7 +174,9 @@ pub fn create_program_address(
     // Call via a system call to perform the calculation
     #[cfg(target_os = "solana")]
     {
-        let mut bytes = [0; 32];
+        // Note: since the array will be returned, it is "cheaper" to have
+        // it initialized instead of having to do a transmute later.
+        let mut bytes = [0u8; 32];
 
         let result = unsafe {
             crate::syscalls::sol_create_program_address(
