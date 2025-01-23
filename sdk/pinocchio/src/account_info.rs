@@ -444,7 +444,7 @@ impl AccountInfo {
     /// closing the account.
     ///
     /// This doesn't protect against future reinitialization of the account
-    /// since the account data will need to be zeroed out as well; otherwise the lenght,
+    /// since the account data will need to be zeroed out as well; otherwise the length,
     /// lamports and owner can be set again before the data is wiped out from
     /// the ledger using the keypair of the account being close.
     ///
