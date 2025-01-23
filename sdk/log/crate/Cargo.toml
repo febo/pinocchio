@@ -7,6 +7,9 @@ license = { workspace = true }
 readme = "./README.md"
 repository = { workspace = true }
 
+[lib]
+crate-type = ["rlib"]
+
 [dependencies]
 pinocchio-log-macro = { version = "^0.3", path = "../macro", optional = true }
 
