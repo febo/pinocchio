@@ -37,7 +37,7 @@ name = "pinocchio"
 version = "0.7.1"
 
 [[package]]
-name = "pinocchio-associated-token"
+name = "pinocchio-associated-token-account"
 version = "0.2.1"
 dependencies = [
  "pinocchio",

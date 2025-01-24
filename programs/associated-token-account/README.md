@@ -1,6 +1,6 @@
-# Associated Token
+# Associated Token Account
 
-This crate contains [`pinocchio`](https://crates.io/crates/pinocchio) helpers to perform cross-program invocations (CPIs) for Associated Token program instructions.
+This crate contains [`pinocchio`](https://crates.io/crates/pinocchio) helpers to perform cross-program invocations (CPIs) for Associated Token Account program instructions.
 
 Each instruction defines an `struct` with the accounts and parameters required. Once all values are set, you can call directly `invoke` or `invoke_signed` to perform the CPI.
 
