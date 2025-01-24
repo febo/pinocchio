@@ -41,7 +41,6 @@ pub struct RecoverNested<'a> {
     pub token_program: &'a AccountInfo,
 }
 
-
 impl<'a> RecoverNested<'a> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
