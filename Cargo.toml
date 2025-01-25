@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "programs/associated-token-account",
     "programs/system",
     "programs/token",
     "sdk/log/crate",
