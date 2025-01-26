@@ -12,4 +12,4 @@ crate-type = ["rlib"]
 
 [dependencies]
 pinocchio = { path = "../pinocchio", version = "0.7" }
-solana-account-info = "2.1.11"
+solana-account-info = "2.1"
