@@ -1,0 +1,15 @@
+[package]
+name = "pinocchio-adapter"
+description = "Adapter types to facilitate the interaction between SDK types and pinocchio"
+version = "0.1.0"
+edition = { workspace = true }
+license = { workspace = true }
+readme = "./README.md"
+repository = { workspace = true }
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+pinocchio = { path = "../pinocchio", version = "0.7" }
+solana-account-info = "2.1.11"

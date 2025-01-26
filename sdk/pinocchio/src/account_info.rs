@@ -26,7 +26,7 @@ macro_rules! get_account_info {
 /// to the data.
 #[repr(C)]
 #[derive(Clone, Copy, Default)]
-pub(crate) struct Account {
+pub struct Account {
     /// Borrow state of the account data.
     ///
     /// 0) We reuse the duplicate flag for this. We set it to 0b0000_0000.
@@ -103,6 +103,19 @@ pub struct AccountInfo {
 }
 
 impl AccountInfo {
+    /// Creates a new `AccountInfo` from a raw pointer to an `Account`.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the raw pointer to the `Account` is valid
+    /// and lives for at least as long as the `AccountInfo`.
+    pub unsafe fn new(raw: *mut Account) -> Self {
+        // Resets the borrow state (first byte) to 0b_0000_0000
+        // to keep track of the mutable and immutable borrows.
+        (*raw).borrow_state = 0b_0000_0000;
+        Self { raw }
+    }
+
     /// Public key of the account.
     #[inline(always)]
     pub fn key(&self) -> &Pubkey {

@@ -4,6 +4,7 @@ members = [
     "programs/associated-token-account",
     "programs/system",
     "programs/token",
+    "sdk/adapter",
     "sdk/log/crate",
     "sdk/log/macro",
     "sdk/pinocchio",
