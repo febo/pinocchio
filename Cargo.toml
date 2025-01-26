@@ -13,7 +13,7 @@ members = [
 [workspace.package]
 edition = "2021"
 license = "Apache-2.0"
-repository = "https://github.com/febo/pinocchio"
+repository = "https://github.com/anza-xyz/pinocchio"
 
 [workspace.dependencies]
 five8_const = "0.1.3"
