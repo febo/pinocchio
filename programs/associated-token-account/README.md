@@ -8,7 +8,7 @@
 </h3>
 <p align="center">
   <a href="https://crates.io/crates/pinocchio-associated-token-account"><img src="https://img.shields.io/crates/v/pinocchio-associated-token-account?logo=rust" /></a>
-  <a href="https://docs.rs/pinocchio-associated-token-account/latest/pinocchio-associated-token-account/"><img src="https://img.shields.io/docsrs/pinocchio-associated-token-account?logo=docsdotrs" /></a>
+  <a href="https://docs.rs/pinocchio-associated-token-account/latest/pinocchio_associated_token_account/"><img src="https://img.shields.io/docsrs/pinocchio-associated-token-account?logo=docsdotrs" /></a>
 </p>
 
 This crate contains [`pinocchio`](https://crates.io/crates/pinocchio) helpers to perform cross-program invocations (CPIs) for SPL Associated Token Account program instructions.
