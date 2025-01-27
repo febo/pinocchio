@@ -40,7 +40,7 @@ let [account_info] = accounts else {
 let account_adapter = unsafe { AccountInfoAdapter::new(account_info) };
 
 // An adapter can be dereferenced to a `pinocchio::account_info::AccountInfo`
-use_pinocchio_account_info(&from_adapter);
+function_expecting_pinocchio_account_info(&from_adapter);
 ```
 
 ## License
