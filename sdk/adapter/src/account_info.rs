@@ -1,6 +1,7 @@
 use core::{marker::PhantomData, ops::Deref};
 
 use pinocchio::account_info::{Account, AccountInfo};
+use solana_program_error::ProgramError;
 
 /// An adapter for [`solana_account_info::AccountInfo`] that allows
 /// to access the account data through an [`AccountInfo`].
@@ -26,7 +27,32 @@ impl<'a> AccountInfoAdapter<'a> {
     ///
     /// Once the `AccountInfoAdapter` is created, it is assumed that any access to
     /// the account data and lamports must be done through the `AccountInfoAdapter`.
-    pub unsafe fn new(account_info: &solana_account_info::AccountInfo) -> Self {
+    #[inline(always)]
+    pub unsafe fn new(
+        account_info: &solana_account_info::AccountInfo,
+    ) -> Result<Self, ProgramError> {
+        {
+            let _ = account_info.try_borrow_mut_data()?;
+            let _ = account_info.try_borrow_mut_lamports()?;
+        }
+
+        Ok(Self::new_unchecked(account_info))
+    }
+
+    /// Create a new `AccountInfoAdapter` from a `solana_account_info::AccountInfo`.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it extracts a raw pointer from the the
+    /// `solana_account_info::AccountInfo` and creates a `AccountInfo` from it.
+    /// This is only valid for `AccountInfo` references created by the runtime, which
+    /// have a stable layout. It does not check whether the `AccountInfo` data and
+    /// lamports can be mutably borrowed.
+    ///
+    /// Once the `AccountInfoAdapter` is created, it is assumed that any access to
+    /// the account data and lamports must be done through the `AccountInfoAdapter`.
+    #[inline(always)]
+    pub unsafe fn new_unchecked(account_info: &solana_account_info::AccountInfo) -> Self {
         // Extract the pointer to the start of the `Account`.
         let ptr = account_info.key as *const _ as *mut u8;
         // Given that an `AccountInfo` is created by the runtime and has a
