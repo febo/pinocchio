@@ -31,7 +31,7 @@ pub struct TransferChecked<'a> {
     pub decimals: u8,
 }
 
-impl<'a> TransferChecked<'a> {
+impl TransferChecked<'_> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])

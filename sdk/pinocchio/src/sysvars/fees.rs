@@ -7,7 +7,6 @@ use crate::impl_sysvar_get;
 #[derive(Debug, Default, Clone, Copy)]
 pub struct FeeCalculator {
     /// The current cost of a signature in lamports.
-
     /// This amount may increase/decrease over time based on cluster processing
     /// load.
     pub lamports_per_signature: u64,

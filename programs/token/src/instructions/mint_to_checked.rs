@@ -29,7 +29,7 @@ pub struct MintToChecked<'a> {
     pub decimals: u8,
 }
 
-impl<'a> MintToChecked<'a> {
+impl MintToChecked<'_> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])

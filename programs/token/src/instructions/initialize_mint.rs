@@ -28,7 +28,7 @@ pub struct InitializeMint<'a> {
     pub freeze_authority: Option<&'a Pubkey>,
 }
 
-impl<'a> InitializeMint<'a> {
+impl InitializeMint<'_> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])

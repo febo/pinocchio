@@ -504,14 +504,14 @@ impl<'a, T: ?Sized> Ref<'a, T> {
     }
 }
 
-impl<'a, T: ?Sized> core::ops::Deref for Ref<'a, T> {
+impl<T: ?Sized> core::ops::Deref for Ref<'_, T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
         unsafe { self.value.as_ref() }
     }
 }
 
-impl<'a, T: ?Sized> Drop for Ref<'a, T> {
+impl<T: ?Sized> Drop for Ref<'_, T> {
     // decrement the immutable borrow count
     fn drop(&mut self) {
         unsafe { *self.state.as_mut() -= 1 << self.borrow_shift };
@@ -576,19 +576,19 @@ impl<'a, T: ?Sized> RefMut<'a, T> {
     }
 }
 
-impl<'a, T: ?Sized> core::ops::Deref for RefMut<'a, T> {
+impl<T: ?Sized> core::ops::Deref for RefMut<'_, T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
         unsafe { self.value.as_ref() }
     }
 }
-impl<'a, T: ?Sized> core::ops::DerefMut for RefMut<'a, T> {
+impl<T: ?Sized> core::ops::DerefMut for RefMut<'_, T> {
     fn deref_mut(&mut self) -> &mut <Self as core::ops::Deref>::Target {
         unsafe { self.value.as_mut() }
     }
 }
 
-impl<'a, T: ?Sized> Drop for RefMut<'a, T> {
+impl<T: ?Sized> Drop for RefMut<'_, T> {
     // unset the mutable borrow flag
     fn drop(&mut self) {
         unsafe { *self.state.as_mut() &= self.borrow_mask };

@@ -17,7 +17,7 @@ pub struct Revoke<'a> {
     pub authority: &'a AccountInfo,
 }
 
-impl<'a> Revoke<'a> {
+impl Revoke<'_> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])

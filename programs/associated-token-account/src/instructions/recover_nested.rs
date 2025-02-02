@@ -41,7 +41,7 @@ pub struct RecoverNested<'a> {
     pub token_program: &'a AccountInfo,
 }
 
-impl<'a> RecoverNested<'a> {
+impl RecoverNested<'_> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
