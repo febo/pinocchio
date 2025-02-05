@@ -26,7 +26,7 @@ pub struct Approve<'a> {
     pub amount: u64,
 }
 
-impl<'a> Approve<'a> {
+impl Approve<'_> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])

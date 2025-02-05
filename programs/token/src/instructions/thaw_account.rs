@@ -20,7 +20,7 @@ pub struct ThawAccount<'a> {
     pub freeze_authority: &'a AccountInfo,
 }
 
-impl<'a> ThawAccount<'a> {
+impl ThawAccount<'_> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])

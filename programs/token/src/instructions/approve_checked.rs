@@ -31,7 +31,7 @@ pub struct ApproveChecked<'a> {
     pub decimals: u8,
 }
 
-impl<'a> ApproveChecked<'a> {
+impl ApproveChecked<'_> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])

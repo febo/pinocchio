@@ -23,7 +23,7 @@ pub struct InitializeAccount<'a> {
     pub rent_sysvar: &'a AccountInfo,
 }
 
-impl<'a> InitializeAccount<'a> {
+impl InitializeAccount<'_> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])

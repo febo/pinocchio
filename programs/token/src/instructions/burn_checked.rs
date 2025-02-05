@@ -27,7 +27,7 @@ pub struct BurnChecked<'a> {
     pub decimals: u8,
 }
 
-impl<'a> BurnChecked<'a> {
+impl BurnChecked<'_> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])

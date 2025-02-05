@@ -30,7 +30,7 @@ pub struct Create<'a> {
     pub token_program: &'a AccountInfo,
 }
 
-impl<'a> Create<'a> {
+impl Create<'_> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])

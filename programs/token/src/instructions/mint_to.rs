@@ -27,7 +27,7 @@ pub struct MintTo<'a> {
     pub amount: u64,
 }
 
-impl<'a> MintTo<'a> {
+impl MintTo<'_> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])

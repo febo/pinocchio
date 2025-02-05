@@ -26,7 +26,7 @@ pub struct Burn<'a> {
     pub amount: u64,
 }
 
-impl<'a> Burn<'a> {
+impl Burn<'_> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])

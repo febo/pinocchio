@@ -31,7 +31,7 @@ pub struct CreateIdempotent<'a> {
     pub token_program: &'a AccountInfo,
 }
 
-impl<'a> CreateIdempotent<'a> {
+impl CreateIdempotent<'_> {
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
