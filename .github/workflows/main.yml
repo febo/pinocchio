@@ -34,31 +34,47 @@ jobs:
     strategy:
       matrix:
         member: ${{ fromJson(needs.filter.outputs.members) }}
+    outputs:
+      crate: ${{ steps.changes.outputs.crate }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
 
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            crate:
+              - '${{ matrix.member }}/**'
+
       - name: Setup Environment
         uses: ./.github/actions/setup
+        if: ${{ steps.changes.outputs.crate == 'true' }}
         with:
           cargo-cache-key: cargo-${{ matrix.member }}
           toolchain: build, format, lint, test
           solana: true
 
       - name: Format
+        if: ${{ steps.changes.outputs.crate == 'true' }}
         run: pnpm format ${{ matrix.member }}
 
       - name: Lint / Clippy
+        if: ${{ steps.changes.outputs.crate == 'true' }}
         run: pnpm lint:clippy ${{ matrix.member }}
 
       - name: Lint / Docs
+        if: ${{ steps.changes.outputs.crate == 'true' }}
         run: pnpm lint:docs ${{ matrix.member }}
 
       - name: Lint / Features
+        if: ${{ steps.changes.outputs.crate == 'true' }}
         run: pnpm lint:features ${{ matrix.member }}
 
       - name: Build (sbf)
+        if: ${{ steps.changes.outputs.crate == 'true' }}  
         run: pnpm build ${{ matrix.member }}
 
       - name: Test
+        if: ${{ steps.changes.outputs.crate == 'true' }}
         run: pnpm test ${{ matrix.member }}
