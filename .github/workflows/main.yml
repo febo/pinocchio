@@ -51,12 +51,22 @@ jobs:
     strategy:
       matrix:
         member: ${{ fromJson(needs.filter.outputs.members) }}
+    outputs:
+      crate: ${{ steps.changes.outputs.crate }}
     steps:
       - name: Git Checkout
         uses: actions/checkout@v4
 
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            crate:
+              - '${{ matrix.member }}/**'
+
       - name: Setup Environment
         uses: ./.github/actions/setup
+        if: ${{ steps.changes.outputs.crate == 'true' }}
         with:
           cargo-cache-key: cargo-${{ matrix.member }}
           toolchain: build, format, lint, test
