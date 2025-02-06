@@ -27,6 +27,10 @@ runs:
       run: pnpm install --frozen-lockfile
       shell: bash
 
+    - name: Set Environment Variables
+      shell: bash
+      run: pnpm tsx ./scripts/setup/set-env.mts
+
     - name: Install Rust 'build' Toolchain
       if: ${{ contains(inputs.toolchain, 'build') }}
       uses: dtolnay/rust-toolchain@master
