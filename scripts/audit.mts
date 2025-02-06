@@ -1,16 +1,16 @@
 #!/usr/bin/env zx
-import 'zx/globals';
+import "zx/globals";
 
 const advisories = [
   // ed25519-dalek: Double Public Key Signing Function Oracle Attack
   //
   // Remove once repo upgrades to ed25519-dalek v2
-  'RUSTSEC-2022-0093',
+  "RUSTSEC-2022-0093",
 
   // curve25519-dalek
   //
   // Remove once repo upgrades to curve25519-dalek v4
-  'RUSTSEC-2024-0344',
+  "RUSTSEC-2024-0344",
 
   // Crate:     tonic
   // Version:   0.9.2
@@ -19,12 +19,12 @@ const advisories = [
   // ID:        RUSTSEC-2024-0376
   // URL:       https://rustsec.org/advisories/RUSTSEC-2024-0376
   // Solution:  Upgrade to >=0.12.3
-  'RUSTSEC-2024-0376',
+  "RUSTSEC-2024-0376",
 ];
-const ignores: string[] = []
-advisories.forEach(x => {
-  ignores.push('--ignore');
+const ignores: string[] = [];
+advisories.forEach((x) => {
+  ignores.push("--ignore");
   ignores.push(x);
 });
 
-await $`cargo audit ${ignores}`.nothrow();
+await $`cargo audit ${ignores}`;

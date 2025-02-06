@@ -7,4 +7,4 @@ const [folder, ...args] = cliArguments();
 const buildArgs = [...args, "--", "--all-targets", "--all-features"];
 const manifestPath = path.join(workingDirectory, folder, "Cargo.toml");
 
-await $`cargo-build-sbf --manifest-path ${manifestPath} ${buildArgs}`.nothrow();
+await $`cargo-build-sbf --manifest-path ${manifestPath} ${buildArgs}`;
