@@ -59,7 +59,8 @@ jobs:
       - name: Git Checkout
         uses: actions/checkout@v4
 
-      - uses: dorny/paths-filter@v3
+      - name: Detect Changes
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           filters: |
