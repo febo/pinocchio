@@ -10,7 +10,7 @@ env:
 
 jobs:
   filter:
-    name: Detect Workspace Members
+    name: Process Workspace
     runs-on: ubuntu-latest
     outputs:
       members: ${{ steps.parse.outputs.members }}
@@ -28,7 +28,7 @@ jobs:
         run: pnpm tsx ./scripts/setup/members.mts
 
   process:
-    name: Package
+    name: Crate
     needs: filter
     runs-on: ubuntu-latest
     strategy:
