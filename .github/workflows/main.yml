@@ -12,6 +12,8 @@ jobs:
   audit:
     name: Audit Dependencies
     runs-on: ubuntu-latest
+    outputs:
+      members: ${{ steps.creates.outputs.members }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
