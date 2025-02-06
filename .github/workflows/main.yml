@@ -18,6 +18,9 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v4
 
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+
       - name: Parse workspace
         run: pnpm tsx ./scripts/setup/members.mts
 
