@@ -1,5 +1,7 @@
 import 'zx/globals';
 import { getCargo } from './shared.mts';
 
-const members = `members=[${getCargo().workspace['members'].join(',')}]`;
-await $`echo ${members} >> $GITHUB_OUTPUT`;
+const members = getCargo().workspace['members'] as string[];
+const membersAsJson = JSON.stringify(members);
+
+await $`echo members=${membersAsJson} >> $GITHUB_OUTPUT`;

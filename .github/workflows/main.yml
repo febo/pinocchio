@@ -13,7 +13,7 @@ jobs:
     name: Filter crates
     runs-on: ubuntu-latest
     outputs:
-      members: ${{ steps.creates.outputs.members }}
+      members: ${{ steps.parse.outputs.members }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
@@ -22,14 +22,15 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Parse workspace
+        id: parse
         run: pnpm tsx ./scripts/setup/members.mts
 
   process:
     name: Process crate
     needs: filter
     runs-on: ubuntu-latest
-    #strategy:
-    #  matrix: ${{ fromJson(needs.filter.outputs.members) }}
+    strategy:
+      matrix: ${{ fromJson(needs.filter.outputs.members) }}
     steps:
       - name: Git checkout
         #uses: actions/checkout@v4
