@@ -10,7 +10,7 @@ env:
 
 jobs:
   filter:
-    name: Filter workspace
+    name: Detect Workspace Members
     runs-on: ubuntu-latest
     outputs:
       members: ${{ steps.parse.outputs.members }}
@@ -28,7 +28,7 @@ jobs:
         run: pnpm tsx ./scripts/setup/members.mts
 
   process:
-    name: Process
+    name: Package
     needs: filter
     runs-on: ubuntu-latest
     strategy:
@@ -40,7 +40,8 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v4
 
-      - uses: dorny/paths-filter@v3
+      - name: Detect Changes
+        uses: dorny/paths-filter@v3
         id: changes
         with:
           filters: |
@@ -54,6 +55,10 @@ jobs:
           cargo-cache-key: cargo-${{ matrix.member }}
           toolchain: build, format, lint, test
           solana: true
+
+      - name: Audit
+        if: ${{ steps.changes.outputs.crate == 'true' }}
+        run: pnpm audit ${{ matrix.member }}
 
       - name: Format
         if: ${{ steps.changes.outputs.crate == 'true' }}
