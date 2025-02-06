@@ -30,11 +30,14 @@ jobs:
     needs: filter
     runs-on: ubuntu-latest
     strategy:
-      matrix: ${{ fromJson(needs.filter.outputs.members) }}
+      matrix:
+        member: ${{ fromJson(needs.filter.outputs.members) }}
     steps:
       - name: Git checkout
         #uses: actions/checkout@v4
-        run: echo ${{ needs.filter.outputs.members }}
+        run: |
+          echo ${{ needs.filter.outputs.members }}
+          echo ${{ matrix.member }}
 
 #jobs:
 #  lint:
