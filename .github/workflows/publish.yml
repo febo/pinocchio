@@ -25,11 +25,6 @@ on:
           - patch
           - minor
           - major
-          - version
-      version:
-        description: Version
-        required: false
-        type: string
       dry_run:
         description: Dry run
         required: true
@@ -49,24 +44,6 @@ jobs:
     name: Publish
     runs-on: ubuntu-latest
     steps:
-      - name: Git checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Environment
-        uses: ./.github/actions/setup
-        with:
-          cargo-cache-key: cargo-publish
-          toolchain: test
-
-      - name: Install cargo-edit
-        run: which cargo-edit || cargo install cargo-edit
-
-      - name: Install cargo-semver-checks
-        run: which cargo-semver-checks || cargo install cargo-semver-checks
-
-      - name: Test
-        run: pnpm test ${{ inputs.crate }}
-
       - name: Ensure CARGO_REGISTRY_TOKEN variable is set
         env:
           token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
@@ -76,6 +53,22 @@ jobs:
           echo "Go to \"Settings\" -> \"Secrets and variables\" -> \"Actions\" -> \"New repository secret\"."
           exit 1
 
+      - name: Git checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          cargo-cache-key: cargo-publish
+          toolchain: test
+          components: semver-checks
+
+      - name: Build
+        run: pnpm build ${{ inputs.crate }}
+
+      - name: Test
+        run: pnpm test ${{ inputs.crate }}
+
       - name: Set Git Author
         run: |
           git config --global user.email "github-actions@github.com"
@@ -83,25 +76,8 @@ jobs:
 
       - name: Check semver
         run: |
-          SET_VERSION_ARGS="--bump"
-          LEVEL=${{ inputs.level }}
-
-          if [ "${{ inputs.level }}" == "version" ]; then
-            SET_VERSION_ARGS=""
-            LEVEL=${{ inputs.version }}
-          fi
-
-          # Bump the version to validate the semver (this will be restored later)
-          pnpm tsx ./scripts/set-version.mts ${{ inputs.crate }} $SET_VERSION_ARGS $LEVEL
-
-          # Check the semver
           pnpm semver ${{ inputs.crate }} --release-type ${{ inputs.level }}
 
-          # Restore the original Cargo.toml
-          git restore .
-
-          echo BUMP="${LEVEL}" >> $GITHUB_ENV
-          
       - name: Publish Crate
         id: publish
         env:
@@ -113,8 +89,8 @@ jobs:
             OPTIONS=""
           fi
 
-          pnpm tsx ./scripts/publish.mts ${{ inputs.crate }} ${{ env.BUMP }} $OPTIONS
-  
+          pnpm tsx ./scripts/publish.mts ${{ inputs.crate }} ${{ inputs.level }} $OPTIONS
+
       - name: Push Commit and Tag
         if: github.event.inputs.dry_run != 'true'
         run: git push origin --follow-tags

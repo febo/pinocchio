@@ -7,6 +7,9 @@ inputs:
   toolchain:
     description: Rust toolchain to install. Comma-separated string of [`build`, `format`, `lint`, `test`].
     required: false
+  components:
+    description: Cargo components to install. Comma-separated string of [`audit`, `hack``, `release`, `semver-checks].
+    required: false
   solana:
     description: Install Solana if `true`. Defaults to `false`.
     required: false
@@ -64,10 +67,25 @@ runs:
         version: ${{ env.SOLANA_VERSION }}
         cache: true
 
+    - name: Install 'cargo-audit'
+      if: ${{ contains(inputs.components, 'audit') }}
+      shell: bash
+      run: cargo install cargo-audit
+
     - name: Install 'cargo-hack'
-      if: ${{ contains(inputs.toolchain, 'lint') }}
+      if: ${{ contains(inputs.components, 'hack') }}
       shell: bash
       run: cargo install cargo-hack
+
+    - name: Install 'cargo-release'
+      if: ${{ contains(inputs.components, 'release') }}
+      shell: bash
+      run: cargo install cargo-release
+
+    - name: Install 'cargo-semver-checks'
+      if: ${{ contains(inputs.components, 'semver-checks') }}
+      shell: bash
+      run: cargo install cargo-semver-checks
 
     - name: Cache Cargo Dependencies
       if: ${{ inputs.cargo-cache-key && !inputs.cargo-cache-fallback-key }}

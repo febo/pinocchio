@@ -4,7 +4,7 @@ import {
   cliArguments,
   getToolchainArgument,
   workingDirectory,
-} from "./setup/shared.mts";
+} from "../shared.mts";
 
 const [folder, ...args] = cliArguments();
 const checkArgs = ["--all-targets", "--feature-powerset", ...args];
