@@ -9,23 +9,40 @@ on:
         default: pinocchio
         type: choice
         options:
-          - pinocchio
-          - pubkey
+          - programs/associated-token-account
+          - programs/system
+          - programs/token
+          - sdk/log/crate
+          - sdk/log/macro
+          - sdk/pinocchio
+          - sdk/pubkey
+      level:
+        description: Level
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - version
+      version:
+        description: Version
+        required: false
+        type: string
       dry_run:
         description: Dry run
         required: true
         default: true
         type: boolean
+      create_release:
+        description: Create a GitHub release
+        required: true
+        type: boolean
+        default: true
 
 env:
-  RUST_VERSION: 1.78.0
-  SOLANA_VERSION: 1.18.20
-  CARGO_CACHE: |
-    ~/.cargo/bin/
-    ~/.cargo/registry/index/
-    ~/.cargo/registry/cache/
-    ~/.cargo/git/db/
-    target/
+  CACHE: true
 
 jobs:
   publish_release:
@@ -35,19 +52,56 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
+      - name: Setup Environment
+        uses: ./.github/actions/setup
         with:
-          toolchain: stable
+          cargo-cache-key: cargo-publish
+          toolchain: test
+
+      - name: Install cargo-bump
+        run: which cargo-bump || cargo install cargo-bump
+
+      - name: Install cargo-semver-checks
+        run: which cargo-semver-checks || cargo install cargo-semver-checks
+
+      - name: Test
+        run: pnpm test ${{ inputs.crate }}
+
+      - name: Ensure CARGO_REGISTRY_TOKEN variable is set
+        env:
+          token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        if: ${{ env.token == '' }}
+        run: |
+          echo "The CARGO_REGISTRY_TOKEN secret variable is not set"
+          echo "Go to \"Settings\" -> \"Secrets and variables\" -> \"Actions\" -> \"New repository secret\"."
+          exit 1
+
+      - name: Set Git Author
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "github-actions"
+
+      - name: Bump Version
+        run: |
+          if [ "${{ inputs.level }}" == "version" ]; then
+            LEVEL=${{ inputs.version }}
+          else
+            LEVEL=${{ inputs.level }}
+          fi
+
+          cargo bump $LEVEL
+          echo BUMP="${LEVEL}" >> $GITHUB_ENV
 
       - name: Check semver
-        uses: obi1kenobi/cargo-semver-checks-action@v2
-
-      - name: Publish crate
+        run: pnpm semver ${{ inputs.crate }}
+          
+      - name: Publish Crate
+        id: publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
-          MANIFEST="./sdk/${{ inputs.crate }}/Cargo.toml"
+          # Restore the workspace to the original state
+          git restore .
 
           if [ "${{ inputs.dry_run }}" == "true" ]; then
             OPTIONS="--dry-run"
@@ -55,4 +109,14 @@ jobs:
             OPTIONS=""
           fi
 
-          cargo publish --manifest-path $MANIFEST $OPTIONS
+          pnpm tsx ./scripts/publish.mts ${{ inputs.crate }} ${{ env.BUMP }} $OPTIONS
+  
+      - name: Push Commit and Tag
+        if: github.event.inputs.dry_run != 'true'
+        run: git push origin --follow-tags
+
+      - name: Create GitHub release
+        if: github.event.inputs.create_release == 'true' && github.event.inputs.dry_run != 'true'
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.publish.outputs.crate }}@v${{ steps.publish.outputs.version }}
