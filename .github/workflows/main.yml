@@ -54,8 +54,6 @@ jobs:
     strategy:
       matrix:
         member: ${{ fromJson(needs.filter.outputs.members) }}
-    outputs:
-      crate: ${{ steps.changes.outputs.crate }}
     steps:
       - name: Git Checkout
         uses: actions/checkout@v4
