@@ -25,7 +25,7 @@ cd(path.dirname(manifestPath));
 const releaseArgs = dryRun
   ? []
   : ['--no-push', '--no-tag', '--no-confirm', '--execute'];
-await $`cargo release ${level} ${releaseArgs}`;
+//await $`cargo release ${level} ${releaseArgs}`;
 
 // Get the crate information.
 const toml = getCargo(folder);
