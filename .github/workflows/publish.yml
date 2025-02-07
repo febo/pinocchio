@@ -62,6 +62,7 @@ jobs:
           cargo-cache-key: cargo-publish
           toolchain: test
           components: semver-checks
+          solana: true
 
       - name: Build
         run: pnpm build ${{ inputs.crate }}
