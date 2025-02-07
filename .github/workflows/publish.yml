@@ -25,6 +25,11 @@ on:
           - patch
           - minor
           - major
+          - version
+      version:
+        description: Version
+        required: false
+        type: string
       dry_run:
         description: Dry run
         required: true

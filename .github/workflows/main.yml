@@ -12,6 +12,7 @@ jobs:
   audit:
     name: Audit Dependencies
     runs-on: ubuntu-latest
+    needs: audit
     outputs:
       members: ${{ steps.parse.outputs.members }}
     steps:
