@@ -23,6 +23,8 @@ where
 
 /// Use to query and convey information about the sibling instruction components
 /// when calling the `sol_get_processed_sibling_instruction` syscall.
+///
+/// This comments is part of the test of changes.
 #[repr(C)]
 #[derive(Default, Debug, Clone, Copy, Eq, PartialEq)]
 pub struct ProcessedSiblingInstruction {
