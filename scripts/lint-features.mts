@@ -7,7 +7,6 @@ import {
 } from "./setup/shared.mts";
 
 const [folder, ...args] = cliArguments();
-
 const checkArgs = ["--all-targets", "--feature-powerset", ...args];
 
 const toolchain = getToolchainArgument("lint");

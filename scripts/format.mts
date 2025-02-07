@@ -10,10 +10,10 @@ import {
 
 const [folder, ...formatArgs] = cliArguments();
 
-const fix = popArgument(formatArgs, "--fix");
-const [cargoArgs, fmtArgs] = partitionArguments(formatArgs, "--");
 const toolchain = getToolchainArgument("format");
+const fix = popArgument(formatArgs, "--fix");
 
+const [cargoArgs, fmtArgs] = partitionArguments(formatArgs, "--");
 const manifestPath = path.join(workingDirectory, folder, "Cargo.toml");
 
 // Format the client.

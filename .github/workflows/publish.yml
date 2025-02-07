@@ -25,6 +25,11 @@ on:
           - patch
           - minor
           - major
+          - version
+      version:
+        description: Version
+        required: false
+        type: string
       dry_run:
         description: Dry run
         required: true
@@ -53,6 +58,9 @@ jobs:
           cargo-cache-key: cargo-publish
           toolchain: test
 
+      - name: Install cargo-set-version
+        run: which cargo-set-version || cargo install cargo-set-version
+
       - name: Install cargo-semver-checks
         run: which cargo-semver-checks || cargo install cargo-semver-checks
 
@@ -74,7 +82,25 @@ jobs:
           git config --global user.name "github-actions"
 
       - name: Check semver
-        run: pnpm semver ${{ inputs.crate }} --release-type ${{ inputs.level }}
+        run: |
+          if [ "${{ inputs.level }}" == "version" ]; then
+            SET_VERSION_ARGS = ""
+            LEVEL=${{ inputs.version }}
+          else
+            SET_VERSION_ARGS = "--bump"
+            LEVEL=${{ inputs.level }}
+          fi
+
+          # Bump the version to validate the semver (this will be restored later)
+          pnpm set-version ${{ inputs.crate }} $SET_VERSION_ARGS $LEVEL
+
+          # Check the semver
+          pnpm semver ${{ inputs.crate }} --release-type ${{ inputs.level }}
+
+          # Restore the original Cargo.toml
+          git restore .
+
+          echo BUMP="${LEVEL}" >> $GITHUB_ENV
           
       - name: Publish Crate
         id: publish
@@ -87,7 +113,7 @@ jobs:
             OPTIONS=""
           fi
 
-          pnpm tsx ./scripts/publish.mts ${{ inputs.crate }} ${{ inputs.level }} $OPTIONS
+          pnpm tsx ./scripts/publish.mts ${{ inputs.crate }} ${{ env.BUMP }} $OPTIONS
   
       - name: Push Commit and Tag
         if: github.event.inputs.dry_run != 'true'

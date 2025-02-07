@@ -9,9 +9,28 @@ env:
   CACHE: true
 
 jobs:
-  filter:
-    name: Process Workspace
+  audit:
+    name: Audit
     runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          cargo-cache-key: cargo-audit
+
+      - name: Install cargo-audit
+        run: which cargo-audit || cargo install cargo-audit
+
+      - name: Audit
+        run: pnpm audit
+
+  filter:
+    name: Filter Workspace
+    runs-on: ubuntu-latest
+    needs: audit
     outputs:
       members: ${{ steps.parse.outputs.members }}
     steps:
@@ -55,10 +74,6 @@ jobs:
           cargo-cache-key: cargo-${{ matrix.member }}
           toolchain: build, format, lint, test
           solana: true
-
-      - name: Audit
-        if: ${{ steps.changes.outputs.crate == 'true' }}
-        run: pnpm audit ${{ matrix.member }}
 
       - name: Format
         if: ${{ steps.changes.outputs.crate == 'true' }}
