@@ -1,5 +1,5 @@
 #!/usr/bin/env zx
-import "zx/globals";
+import 'zx/globals';
 
 const advisories = [
   // === main repo ===
@@ -42,7 +42,7 @@ const advisories = [
   // ID:        RUSTSEC-2024-0376
   // URL:       https://rustsec.org/advisories/RUSTSEC-2024-0376
   // Solution:  Upgrade to >=0.12.3
-  "RUSTSEC-2024-0376",
+  'RUSTSEC-2024-0376',
 ];
 const ignores: string[] = [];
 advisories.forEach((x) => {
