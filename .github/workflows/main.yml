@@ -51,8 +51,6 @@ jobs:
     strategy:
       matrix:
         member: ${{ fromJson(needs.filter.outputs.members) }}
-    outputs:
-      crate: ${{ steps.changes.outputs.crate }}
     steps:
       - name: Git Checkout
         uses: actions/checkout@v4
@@ -71,28 +69,29 @@ jobs:
         with:
           cargo-cache-key: cargo-${{ matrix.member }}
           toolchain: build, format, lint, test
+          components: hack
           solana: true
 
-      - name: Format
+      - name: fmt
         if: ${{ steps.changes.outputs.crate == 'true' }}
         run: pnpm format ${{ matrix.member }}
 
-      - name: Lint / Clippy
+      - name: clippy
         if: ${{ steps.changes.outputs.crate == 'true' }}
-        run: pnpm lint:clippy ${{ matrix.member }}
+        run: pnpm clippy ${{ matrix.member }}
 
-      - name: Lint / Docs
+      - name: cargo-doc
         if: ${{ steps.changes.outputs.crate == 'true' }}
-        run: pnpm lint:docs ${{ matrix.member }}
+        run: pnpm doc ${{ matrix.member }}
 
-      - name: Lint / Features
+      - name: cargo-hack
         if: ${{ steps.changes.outputs.crate == 'true' }}
-        run: pnpm lint:features ${{ matrix.member }}
+        run: pnpm hack ${{ matrix.member }}
 
-      - name: Build (SBF)
+      - name: build-sbf
         if: ${{ steps.changes.outputs.crate == 'true' }}  
         run: pnpm build ${{ matrix.member }}
 
-      - name: Test
+      - name: test
         if: ${{ steps.changes.outputs.crate == 'true' }}
         run: pnpm test ${{ matrix.member }}
