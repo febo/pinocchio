@@ -34,7 +34,7 @@ jobs:
     outputs:
       members: ${{ steps.parse.outputs.members }}
     steps:
-      - name: Git checkout
+      - name: Git Checkout
         uses: actions/checkout@v4
 
       - name: Setup Environment
@@ -42,7 +42,7 @@ jobs:
         with:
           cargo-cache-key: cargo-filter-workspace
 
-      - name: Parse workspace
+      - name: Filter
         id: parse
         run: pnpm tsx ./scripts/setup/members.mts
 
@@ -56,7 +56,7 @@ jobs:
     outputs:
       crate: ${{ steps.changes.outputs.crate }}
     steps:
-      - name: Git checkout
+      - name: Git Checkout
         uses: actions/checkout@v4
 
       - name: Detect Changes
@@ -91,7 +91,7 @@ jobs:
         if: ${{ steps.changes.outputs.crate == 'true' }}
         run: pnpm lint:features ${{ matrix.member }}
 
-      - name: Build (sbf)
+      - name: Build (SBF)
         if: ${{ steps.changes.outputs.crate == 'true' }}  
         run: pnpm build ${{ matrix.member }}
 

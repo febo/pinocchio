@@ -83,12 +83,12 @@ jobs:
 
       - name: Check semver
         run: |
+          SET_VERSION_ARGS="--bump"
+          LEVEL=${{ inputs.level }}
+
           if [ "${{ inputs.level }}" == "version" ]; then
-            SET_VERSION_ARGS = ""
+            SET_VERSION_ARGS=""
             LEVEL=${{ inputs.version }}
-          else
-            SET_VERSION_ARGS = "--bump"
-            LEVEL=${{ inputs.level }}
           fi
 
           # Bump the version to validate the semver (this will be restored later)
