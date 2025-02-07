@@ -1,16 +1,16 @@
 #!/usr/bin/env zx
-import "zx/globals";
+import 'zx/globals';
 import {
   cliArguments,
   getCargo,
   popArgument,
   workingDirectory,
-} from "./setup/shared.mts";
+} from './setup/shared.mts';
 
 const [folder, ...args] = cliArguments();
-const manifestPath = path.join(workingDirectory, folder, "Cargo.toml");
+const manifestPath = path.join(workingDirectory, folder, 'Cargo.toml');
 
-const fix = popArgument(args, "--dry-run");
+const fix = popArgument(args, '--dry-run');
 const dryRun = argv['dry-run'] ?? false;
 
 const [level] = args;
@@ -25,7 +25,7 @@ cd(path.dirname(manifestPath));
 const releaseArgs = dryRun
   ? []
   : ['--no-push', '--no-tag', '--no-confirm', '--execute'];
-//await $`cargo release ${level} ${releaseArgs}`;
+await $`cargo release ${level} ${releaseArgs}`;
 
 // Get the crate information.
 const toml = getCargo(folder);

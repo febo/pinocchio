@@ -9,7 +9,10 @@ export const workingDirectory = (await $`pwd`.quiet()).toString().trim();
 export function getCargo(folder?: string): JsonMap {
   return parseToml(
     fs.readFileSync(
-      path.resolve(workingDirectory, path.join(folder ? folder : '.', 'Cargo.toml')),
+      path.resolve(
+        workingDirectory,
+        path.join(folder ? folder : '.', 'Cargo.toml')
+      ),
       'utf8'
     )
   );

@@ -1,4 +1,4 @@
-import "zx/globals";
+import 'zx/globals';
 
 const args = process.argv.slice(2);
 
