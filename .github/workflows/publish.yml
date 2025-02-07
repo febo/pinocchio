@@ -58,8 +58,8 @@ jobs:
           cargo-cache-key: cargo-publish
           toolchain: test
 
-      - name: Install cargo-set-version
-        run: which cargo-set-version || cargo install cargo-set-version
+      - name: Install cargo-edit
+        run: which cargo-edit || cargo install cargo-edit
 
       - name: Install cargo-semver-checks
         run: which cargo-semver-checks || cargo install cargo-semver-checks
