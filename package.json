@@ -3,11 +3,12 @@
     "scripts": {
       "audit": "tsx ./scripts/audit.mjs",
       "build": "tsx ./scripts/build.mjs",
+      "format": "tsx ./scripts/format.mjs",
       "lint": "tsx ./scripts/lint.mjs",
       "lint:clippy": "tsx ./scripts/lint-clippy.mjs",
       "lint:docs": "tsx ./scripts/lint-docs.mjs",
       "lint:features": "tsx ./scripts/lint-features.mjs",
-      "format": "tsx ./scripts/format.mjs",
+      "semver": "tsx ./scripts/semver-checks.mjs",
       "test": "tsx ./scripts/test.mjs"
     },
     "devDependencies": {
