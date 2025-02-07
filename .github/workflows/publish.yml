@@ -92,7 +92,7 @@ jobs:
           fi
 
           # Bump the version to validate the semver (this will be restored later)
-          pnpm set-version ${{ inputs.crate }} $SET_VERSION_ARGS $LEVEL
+          pnpm tsx ./scripts/set-version.mts ${{ inputs.crate }} $SET_VERSION_ARGS $LEVEL
 
           # Check the semver
           pnpm semver ${{ inputs.crate }} --release-type ${{ inputs.level }}
