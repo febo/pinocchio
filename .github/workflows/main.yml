@@ -55,17 +55,8 @@ jobs:
       - name: Git Checkout
         uses: actions/checkout@v4
 
-      - name: Detect Changes
-        uses: dorny/paths-filter@v3
-        id: changes
-        with:
-          filters: |
-            crate:
-              - '${{ matrix.member }}/**'
-
       - name: Setup Environment
         uses: ./.github/actions/setup
-        if: ${{ steps.changes.outputs.crate == 'true' }}
         with:
           cargo-cache-key: cargo-${{ matrix.member }}
           toolchain: build, format, lint, test
@@ -73,25 +64,19 @@ jobs:
           solana: true
 
       - name: fmt
-        if: ${{ steps.changes.outputs.crate == 'true' }}
         run: pnpm format ${{ matrix.member }}
 
       - name: clippy
-        if: ${{ steps.changes.outputs.crate == 'true' }}
         run: pnpm clippy ${{ matrix.member }}
 
       - name: cargo-doc
-        if: ${{ steps.changes.outputs.crate == 'true' }}
         run: pnpm doc ${{ matrix.member }}
 
       - name: cargo-hack
-        if: ${{ steps.changes.outputs.crate == 'true' }}
         run: pnpm hack ${{ matrix.member }}
 
       - name: build-sbf
-        if: ${{ steps.changes.outputs.crate == 'true' }}  
         run: pnpm build ${{ matrix.member }}
 
       - name: test
-        if: ${{ steps.changes.outputs.crate == 'true' }}
         run: pnpm test ${{ matrix.member }}
