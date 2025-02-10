@@ -1,7 +1,7 @@
 [package]
-name = "pinocchio-token"
-description = "Pinocchio helpers to invoke Token program instructions"
-version = "0.2.1"
+name = "pinocchio-cpi"
+description = "Cross program invocation helpers for Pinocchio"
+version = "0.1.0"
 edition = { workspace = true }
 license = { workspace = true }
 readme = "./README.md"
@@ -10,7 +10,11 @@ repository = { workspace = true }
 [lib]
 crate-type = ["rlib"]
 
+[features]
+std = []
+
 [dependencies]
 pinocchio = { workspace = true }
-pinocchio-cpi = { workspace = true }
-pinocchio-pubkey = { workspace = true }
+
+[lints]
+workspace = true

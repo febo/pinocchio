@@ -41,7 +41,15 @@ name = "pinocchio-associated-token-account"
 version = "0.1.0"
 dependencies = [
  "pinocchio",
+ "pinocchio-cpi",
  "pinocchio-pubkey",
+]
+
+[[package]]
+name = "pinocchio-cpi"
+version = "0.1.0"
+dependencies = [
+ "pinocchio",
 ]
 
 [[package]]
@@ -73,6 +81,7 @@ name = "pinocchio-system"
 version = "0.2.1"
 dependencies = [
  "pinocchio",
+ "pinocchio-cpi",
  "pinocchio-pubkey",
 ]
 
@@ -81,6 +90,7 @@ name = "pinocchio-token"
 version = "0.2.1"
 dependencies = [
  "pinocchio",
+ "pinocchio-cpi",
  "pinocchio-pubkey",
 ]
 

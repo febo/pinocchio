@@ -2,7 +2,7 @@
 
 use core::{mem::MaybeUninit, ops::Deref};
 
-use crate::{
+use pinocchio::{
     account_info::AccountInfo,
     instruction::{Account, AccountMeta, Instruction, Signer},
     program_error::ProgramError,
