@@ -16,5 +16,8 @@ std = []
 [dependencies]
 pinocchio = { workspace = true }
 
+[target.'cfg(target_os = "solana")'.dependencies]
+solana-define-syscall = { workspace = true }
+
 [lints]
 workspace = true
