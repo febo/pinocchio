@@ -445,11 +445,9 @@ impl AccountInfo {
     /// the ledger using the keypair of the account being close.
     #[inline]
     pub fn close(&self) -> ProgramResult {
-        {
-            // make sure the account is not borrowed since we are about to
-            // resize the data to zero
-            let _ = self.try_borrow_mut_data()?;
-        }
+        // make sure the account is not borrowed since we are about to
+        // resize the data to zero
+        self.check_borrow_mut_data()?;
 
         unsafe {
             self.close_unchecked();
