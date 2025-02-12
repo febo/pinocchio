@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/febo/pinocchio/actions/workflows/main.yml"><img src="https://img.shields.io/github/actions/workflow/status/febo/pinocchio/main.yml?logo=GitHub" /></a>
+  <a href="https://github.com/anza-xyz/pinocchio/actions/workflows/main.yml"><img src="https://img.shields.io/github/actions/workflow/status/anza-xyz/pinocchio/main.yml?logo=GitHub" /></a>
   <a href="https://crates.io/crates/pinocchio"><img src="https://img.shields.io/crates/v/pinocchio?logo=rust" /></a>
 </p>
 
