@@ -157,6 +157,7 @@ impl AccountInfo {
 
     /// Changes the owner of the account.
     #[allow(invalid_reference_casting)]
+    #[inline(always)]
     pub fn assign(&self, new_owner: &Pubkey) {
         unsafe {
             core::ptr::write_volatile(&(*self.raw).owner as *const _ as *mut Pubkey, *new_owner);
@@ -169,6 +170,7 @@ impl AccountInfo {
     ///
     /// This method is unsafe because it does not return a `Ref`, thus leaving the borrow
     /// flag untouched. Useful when an instruction has verified non-duplicate accounts.
+    #[inline(always)]
     pub unsafe fn borrow_lamports_unchecked(&self) -> &u64 {
         &(*self.raw).lamports
     }
@@ -180,6 +182,7 @@ impl AccountInfo {
     /// This method is unsafe because it does not return a `Ref`, thus leaving the borrow
     /// flag untouched. Useful when an instruction has verified non-duplicate accounts.
     #[allow(clippy::mut_from_ref)]
+    #[inline(always)]
     pub unsafe fn borrow_mut_lamports_unchecked(&self) -> &mut u64 {
         &mut (*self.raw).lamports
     }
@@ -190,6 +193,7 @@ impl AccountInfo {
     ///
     /// This method is unsafe because it does not return a `Ref`, thus leaving the borrow
     /// flag untouched. Useful when an instruction has verified non-duplicate accounts.
+    #[inline(always)]
     pub unsafe fn borrow_data_unchecked(&self) -> &[u8] {
         core::slice::from_raw_parts(self.data_ptr(), self.data_len())
     }
@@ -201,6 +205,7 @@ impl AccountInfo {
     /// This method is unsafe because it does not return a `Ref`, thus leaving the borrow
     /// flag untouched. Useful when an instruction has verified non-duplicate accounts.
     #[allow(clippy::mut_from_ref)]
+    #[inline(always)]
     pub unsafe fn borrow_mut_data_unchecked(&self) -> &mut [u8] {
         core::slice::from_raw_parts_mut(self.data_ptr(), self.data_len())
     }
@@ -391,6 +396,7 @@ impl AccountInfo {
     /// since the account data will need to be zeroed out as well; otherwise the lenght,
     /// lamports and owner can be set again before the data is wiped out from
     /// the ledger using the keypair of the account being close.
+    #[inline]
     pub fn close(&self) -> ProgramResult {
         {
             // make sure the account is not borrowed since we are about to
@@ -430,17 +436,8 @@ impl AccountInfo {
         // - 8 bytes for the data_len
         //
         // So we can zero out them directly.
-
-        // Zero out the account owner. While the field is a `Pubkey`, it is quicker
-        // to zero the 32 bytes as 4 x `u64`s.
-        *(self.data_ptr().sub(48) as *mut u64) = 0u64;
-        *(self.data_ptr().sub(40) as *mut u64) = 0u64;
-        *(self.data_ptr().sub(32) as *mut u64) = 0u64;
-        *(self.data_ptr().sub(24) as *mut u64) = 0u64;
-        // Zero the account lamports.
-        (*self.raw).lamports = 0;
-        // Zero the account data length.
-        (*self.raw).data_len = 0;
+        #[cfg(target_os = "solana")]
+        sol_memset_(self.data_ptr().sub(48), 0, 48);
     }
 
     /// Returns the memory address of the account data.
