@@ -17,7 +17,7 @@ const DIGITS: [u8; 10] = [b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', 
 const TRUNCATED_SLICE: [u8; 3] = [b'.', b'.', b'.'];
 
 /// Byte representing a truncated log.
-const TRUCATED: u8 = b'@';
+const TRUNCATED: u8 = b'@';
 
 /// An uninitialized byte.
 const UNINIT_BYTE: MaybeUninit<u8> = MaybeUninit::uninit();
@@ -68,7 +68,7 @@ impl<const BUFFER: usize> Logger<BUFFER> {
             if BUFFER > 0 {
                 unsafe {
                     let last = self.buffer.get_unchecked_mut(BUFFER - 1);
-                    last.write(TRUCATED);
+                    last.write(TRUNCATED);
                 }
             }
         } else {
@@ -299,7 +299,7 @@ macro_rules! impl_log_for_unsigned_integer {
                         if overflow {
                             unsafe {
                                 let last = buffer.get_unchecked_mut(written - 1);
-                                last.write(TRUCATED);
+                                last.write(TRUNCATED);
                             }
                         }
                         written
@@ -379,7 +379,7 @@ impl Log for &str {
 
         match buffer.len() - offset {
             0 => unsafe {
-                buffer.get_unchecked_mut(offset - 1).write(TRUCATED);
+                buffer.get_unchecked_mut(offset - 1).write(TRUNCATED);
             },
             _ => {
                 unsafe {
@@ -487,7 +487,7 @@ impl Log for &str {
         if truncated {
             unsafe {
                 let last = buffer.get_unchecked_mut(length - 1);
-                last.write(TRUCATED);
+                last.write(TRUNCATED);
             }
         }
 
@@ -532,7 +532,7 @@ macro_rules! impl_log_for_slice {
             for value in self.iter() {
                 if offset >= length {
                     unsafe {
-                        buffer.get_unchecked_mut(length - 1).write(TRUCATED);
+                        buffer.get_unchecked_mut(length - 1).write(TRUNCATED);
                     }
                     offset = length;
                     break;
@@ -541,7 +541,7 @@ macro_rules! impl_log_for_slice {
                 if offset > 1 {
                     if offset + 2 >= length {
                         unsafe {
-                            buffer.get_unchecked_mut(length - 1).write(TRUCATED);
+                            buffer.get_unchecked_mut(length - 1).write(TRUNCATED);
                         }
                         offset = length;
                         break;
