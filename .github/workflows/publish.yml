@@ -61,7 +61,7 @@ jobs:
         with:
           cargo-cache-key: cargo-publish
           toolchain: test
-          components: semver-checks
+          components: release, semver-checks
           solana: true
 
       - name: Build
