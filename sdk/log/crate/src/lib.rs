@@ -206,4 +206,60 @@ mod tests {
         logger.append_with_args("0123456789", &[Argument::TruncateStart(9)]);
         assert!(&*logger == "..@".as_bytes());
     }
+
+    #[test]
+    fn test_logger_with_usize() {
+        let mut logger = Logger::<20>::default();
+
+        logger.append(usize::MIN);
+        assert!(&*logger == "0".as_bytes());
+
+        logger.clear();
+
+        logger.append(usize::MAX);
+
+        #[cfg(target_pointer_width = "32")]
+        {
+            assert!(&*logger == "4294967295".as_bytes());
+            assert_eq!(logger.len(), 10);
+        }
+        #[cfg(target_pointer_width = "64")]
+        {
+            assert!(&*logger == "18446744073709551615".as_bytes());
+            assert_eq!(logger.len(), 20);
+        }
+    }
+
+    #[test]
+    fn test_logger_with_isize() {
+        let mut logger = Logger::<20>::default();
+
+        logger.append(isize::MIN);
+
+        #[cfg(target_pointer_width = "32")]
+        {
+            assert!(&*logger == "-2147483648".as_bytes());
+            assert_eq!(logger.len(), 11);
+        }
+        #[cfg(target_pointer_width = "64")]
+        {
+            assert!(&*logger == "-9223372036854775808".as_bytes());
+            assert_eq!(logger.len(), 20);
+        }
+
+        logger.clear();
+
+        logger.append(isize::MAX);
+
+        #[cfg(target_pointer_width = "32")]
+        {
+            assert!(&*logger == "2147483647".as_bytes());
+            assert_eq!(logger.len(), 10);
+        }
+        #[cfg(target_pointer_width = "64")]
+        {
+            assert!(&*logger == "9223372036854775807".as_bytes());
+            assert_eq!(logger.len(), 19);
+        }
+    }
 }
