@@ -80,7 +80,7 @@ runs:
     - name: Install 'cargo-release'
       if: ${{ contains(inputs.components, 'release') }}
       shell: bash
-      run: cargo install cargo-release
+      run: cargo install cargo-release@0.25.15
 
     - name: Install 'cargo-semver-checks'
       if: ${{ contains(inputs.components, 'semver-checks') }}

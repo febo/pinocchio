@@ -10,6 +10,9 @@ use crate::{program_error::ProgramError, pubkey::Pubkey, ProgramResult};
 /// single realloc.
 pub const MAX_PERMITTED_DATA_INCREASE: usize = 1_024 * 10;
 
+/// Returns the account info at the given index.
+///
+/// This macro validates that the index is within the bounds of the accounts.
 #[macro_export]
 macro_rules! get_account_info {
     ( $accounts:ident, $index:expr ) => {{
@@ -465,6 +468,7 @@ pub struct Ref<'a, T: ?Sized> {
 }
 
 impl<'a, T: ?Sized> Ref<'a, T> {
+    /// Maps a reference to a new type.
     #[inline]
     pub fn map<U: ?Sized, F>(orig: Ref<'a, T>, f: F) -> Ref<'a, U>
     where
@@ -481,6 +485,7 @@ impl<'a, T: ?Sized> Ref<'a, T> {
         }
     }
 
+    /// Filters and maps a reference to a new type.
     #[inline]
     pub fn filter_map<U: ?Sized, F>(orig: Ref<'a, T>, f: F) -> Result<Ref<'a, U>, Self>
     where
@@ -534,6 +539,7 @@ pub struct RefMut<'a, T: ?Sized> {
 }
 
 impl<'a, T: ?Sized> RefMut<'a, T> {
+    /// Maps a mutable reference to a new type.
     #[inline]
     pub fn map<U: ?Sized, F>(orig: RefMut<'a, T>, f: F) -> RefMut<'a, U>
     where
@@ -550,6 +556,7 @@ impl<'a, T: ?Sized> RefMut<'a, T> {
         }
     }
 
+    /// Filters and maps a mutable reference to a new type.
     #[inline]
     pub fn filter_map<U: ?Sized, F>(orig: RefMut<'a, T>, f: F) -> Result<RefMut<'a, U>, Self>
     where
@@ -586,8 +593,8 @@ impl<T: ?Sized> core::ops::DerefMut for RefMut<'_, T> {
 }
 
 impl<T: ?Sized> Drop for RefMut<'_, T> {
-    // unset the mutable borrow flag
     fn drop(&mut self) {
+        // unset the mutable borrow flag
         unsafe { *self.state.as_mut() &= self.borrow_mask };
     }
 }
