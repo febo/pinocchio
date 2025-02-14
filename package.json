@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "audit": "tsx ./scripts/audit.mjs",
-    "build": "tsx ./scripts/build.mjs",
+    "build-sbf": "tsx ./scripts/build-sbf.mjs",
     "clippy": "tsx ./scripts/clippy.mjs",
     "doc": "tsx ./scripts/doc.mjs",
     "format": "tsx ./scripts/format.mjs",

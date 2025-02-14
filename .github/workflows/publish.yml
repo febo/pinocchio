@@ -65,7 +65,7 @@ jobs:
           solana: true
 
       - name: Build
-        run: pnpm build ${{ inputs.crate }}
+        run: pnpm build-sbf ${{ inputs.crate }}
 
       - name: Test
         run: pnpm test ${{ inputs.crate }}

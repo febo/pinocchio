@@ -76,7 +76,7 @@ jobs:
         run: pnpm hack ${{ matrix.member }}
 
       - name: build-sbf
-        run: pnpm build ${{ matrix.member }}
+        run: pnpm build-sbf ${{ matrix.member }}
 
       - name: test
         run: pnpm test ${{ matrix.member }}
