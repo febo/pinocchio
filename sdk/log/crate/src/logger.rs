@@ -324,7 +324,7 @@ impl_log_for_unsigned_integer!(usize, 20);
 
 /// Implement the log trait for the signed integer types.
 macro_rules! impl_log_for_signed {
-    ( $type:tt, $unsigned_type:tt, $max_digits:literal ) => {
+    ( $type:tt ) => {
         impl Log for $type {
             #[inline]
             fn write_with_args(&self, buffer: &mut [MaybeUninit<u8>], args: &[Argument]) -> usize {
@@ -340,7 +340,7 @@ macro_rules! impl_log_for_signed {
                         }
                         1
                     }
-                    mut value => {
+                    value => {
                         let mut prefix = 0;
 
                         if *self < 0 {
@@ -348,11 +348,11 @@ macro_rules! impl_log_for_signed {
                                 buffer.get_unchecked_mut(0).write(b'-');
                             }
                             prefix += 1;
-                            value = -value
                         };
 
                         prefix
-                            + (value as $unsigned_type).write_with_args(&mut buffer[prefix..], args)
+                            + $type::unsigned_abs(value)
+                                .write_with_args(&mut buffer[prefix..], args)
                     }
                 }
             }
@@ -361,16 +361,16 @@ macro_rules! impl_log_for_signed {
 }
 
 // Supported signed integer types.
-impl_log_for_signed!(i8, u8, 3);
-impl_log_for_signed!(i16, u16, 5);
-impl_log_for_signed!(i32, u32, 10);
-impl_log_for_signed!(i64, u64, 19);
-impl_log_for_signed!(i128, u128, 39);
+impl_log_for_signed!(i8);
+impl_log_for_signed!(i16);
+impl_log_for_signed!(i32);
+impl_log_for_signed!(i64);
+impl_log_for_signed!(i128);
 // Handle the `isize` type.
 #[cfg(target_pointer_width = "32")]
-impl_log_for_signed!(isize, usize, 10);
+impl_log_for_signed!(isize);
 #[cfg(target_pointer_width = "64")]
-impl_log_for_signed!(isize, usize, 19);
+impl_log_for_signed!(isize);
 
 /// Implement the log trait for the &str type.
 impl Log for &str {
