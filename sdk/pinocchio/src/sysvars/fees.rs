@@ -44,8 +44,7 @@ pub const DEFAULT_TARGET_LAMPORTS_PER_SIGNATURE: u64 = 10_000;
 /// Default signatures per slot.
 pub const DEFAULT_TARGET_SIGNATURES_PER_SLOT: u64 = 50 * DEFAULT_MS_PER_SLOT;
 
-// Percentage of tx fees to burn...I think this was changed in the anza update...
-/// 100% of fees now goes to validators...I'll confirm...
+/// Default percentage of fees to burn.
 pub const DEFAULT_BURN_PERCENT: u8 = 50;
 
 impl Default for FeeRateGovernor {

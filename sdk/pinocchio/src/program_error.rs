@@ -3,7 +3,7 @@
 //! Current implementation is based on the `ProgramError` enum from
 //! the Solana SDK:
 //!
-//! <https://github.com/anza-xyz/agave/blob/master/sdk/program/src/program_error.rs>
+//! <https://github.com/anza-xyz/solana-sdk/blob/master/program-error/src/lib.rs>
 //!
 //! Considerations:
 //!

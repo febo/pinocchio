@@ -46,6 +46,7 @@ use crate::{account_info::AccountInfo, pubkey::log};
 /// use pinocchio::msg;
 ///
 /// msg!("verifying multisig");
+/// ```
 #[macro_export]
 #[cfg(not(feature = "std"))]
 macro_rules! msg {

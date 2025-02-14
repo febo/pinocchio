@@ -1,7 +1,7 @@
 //! # Pinocchio
 //!
 //! Pinocchio is a zero-dependency library to create Solana programs in Rust.
-//! It takes advantage of the way SBF loaders serialize the program input parameters
+//! It takes advantage of the way SVM loaders serialize the program input parameters
 //! into a byte array that is then passed to the program's entrypoint to define
 //! zero-copy types to read the input – these types are defined in an efficient way
 //! taking into consideration that they will be used in on-chain programs.
@@ -72,7 +72,7 @@
 //!
 //! The [`entrypoint!`] macro looks similar to the "standard" one found in
 //! [`solana-program`](https://docs.rs/solana-program-entrypoint/latest/solana_program_entrypoint/macro.entrypoint.html).
-//! It parsers the whole input and provides the `program_id`, `accounts` and
+//! It parses the whole input and provides the `program_id`, `accounts` and
 //! `instruction_data` separately. This consumes compute units before the program
 //! begins its execution. In some cases, it is beneficial for a program to have
 //! more control when the input parsing is happening, even whether the parsing
@@ -115,11 +115,11 @@
 //!
 //! * [`available()`](entrypoint::InstructionContext::available): number of available
 //!   accounts.
-//! * [`next_account()`](entrypoint::InstructionContext::next_account): parsers the
+//! * [`next_account()`](entrypoint::InstructionContext::next_account): parses the
 //!   next available account (can be used as many times as accounts available).
-//! * [`instruction_data()`](entrypoint::InstructionContext::instruction_data): parsers
+//! * [`instruction_data()`](entrypoint::InstructionContext::instruction_data): parses
 //!   the intruction data.
-//! * [`program_id()`](entrypoint::InstructionContext::program_id): parsers the
+//! * [`program_id()`](entrypoint::InstructionContext::program_id): parses the
 //!   program id.
 //!
 //!
@@ -180,11 +180,11 @@
 //! crate. This crate provides a lightweight `log!` macro with better compute units
 //! consumption than the standard `format!` macro without requiring the `std` library.
 //!
-//! ## Advance entrypoint configuration
+//! ## Advanced entrypoint configuration
 //!
 //! The symbols emitted by the entrypoint macros &mdash; program entrypoint, global
 //! allocator and default panic handler &mdash; can only be defined once globally. If
-//! the program crate is also intended to be use as a library, it is common practice
+//! the program crate is also intended to be used as a library, it is common practice
 //! to define a Cargo [feature](https://doc.rust-lang.org/cargo/reference/features.html)
 //! in your program crate to conditionally enable the module that includes the [`entrypoint!`]
 //! macro invocation. The convention is to name the feature `bpf-entrypoint`.
