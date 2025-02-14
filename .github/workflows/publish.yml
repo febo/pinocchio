@@ -92,10 +92,6 @@ jobs:
 
           pnpm tsx ./scripts/publish.mts ${{ inputs.crate }} ${{ inputs.level }} $OPTIONS
 
-      - name: Push Commit and Tag
-        if: github.event.inputs.dry_run != 'true'
-        run: git push origin --follow-tags
-
       - name: Create GitHub release
         if: github.event.inputs.dry_run != 'true' && github.event.inputs.create_release == 'true'
         uses: ncipollo/release-action@v1
