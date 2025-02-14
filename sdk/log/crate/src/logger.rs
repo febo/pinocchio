@@ -366,10 +366,6 @@ impl_log_for_signed!(i16);
 impl_log_for_signed!(i32);
 impl_log_for_signed!(i64);
 impl_log_for_signed!(i128);
-// Handle the `isize` type.
-#[cfg(target_pointer_width = "32")]
-impl_log_for_signed!(isize);
-#[cfg(target_pointer_width = "64")]
 impl_log_for_signed!(isize);
 
 /// Implement the log trait for the &str type.
