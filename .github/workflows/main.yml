@@ -9,9 +9,11 @@ env:
   CACHE: true
 
 jobs:
-  audit:
-    name: Audit Dependencies
+  sanity:
+    name: Process Workspace
     runs-on: ubuntu-latest
+    outputs:
+      members: ${{ steps.filter.outputs.members }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
@@ -25,32 +27,17 @@ jobs:
       - name: cargo-audit
         run: pnpm audit
 
-  filter:
-    name: Filter Workspace
-    runs-on: ubuntu-latest
-    needs: audit
-    outputs:
-      members: ${{ steps.filter.outputs.members }}
-    steps:
-      - name: Git Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Environment
-        uses: ./.github/actions/setup
-        with:
-          cargo-cache-key: cargo-filter-workspace
-
-      - name: Filter
+      - name: Filter members
         id: filter
         run: pnpm tsx ./scripts/setup/members.mts
 
   process:
-    name: Crate
-    needs: filter
+    name: Check
+    needs: sanity
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        member: ${{ fromJson(needs.filter.outputs.members) }}
+        member: ${{ fromJson(needs.sanity.outputs.members) }}
     steps:
       - name: Git Checkout
         uses: actions/checkout@v4
